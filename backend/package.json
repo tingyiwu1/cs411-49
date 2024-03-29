@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/cors": "^9.0.1",
     "@spotify/web-api-ts-sdk": "^1.2.0",
     "axios": "^1.6.8",
     "dotenv": "^16.4.5",

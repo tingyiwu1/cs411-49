@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import fastify, { RouteShorthandOptions } from "fastify";
+import cors from "@fastify/cors";
 import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 import OpenAI from "openai";
 
@@ -52,6 +53,11 @@ server.post<{ Body: { foo: string } }>("/test", async (request, reply) => {
 
 const start = async () => {
   try {
+    await server.register(cors, {
+      origin: ["http://localhost:5173"],
+      methods: ["GET", "POST", "OPTIONS"],
+    });
+
     await server.listen({ port: 3000 });
 
     const address = server.server.address();
