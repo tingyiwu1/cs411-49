@@ -1,0 +1,73 @@
+.login-container {
+    background-color: #FBF4E9;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  .login-box {
+    background-color: #C1D6BA;
+    width: 685px;
+    height: 580px;
+    border-radius: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  .image-container {
+    margin-top: 20px;
+  }
+  
+  .logo {
+    width: 100px; /* Adjust size as needed */
+    height: auto; /* Maintain aspect ratio */
+  }
+  
+  h2 {
+    margin-top: 10px;
+  }
+  
+  .input-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .input-field {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #000;
+  }
+  
+  .action-container {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  .create-account {
+    font-size: 14px;
+    color: blue; /* Adjust color as needed */
+    cursor: pointer;
+  }
+  
+  .login-button {
+    padding: 10px 20px;
+    background-color: blue; /* Adjust color as needed */
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .login-button:hover {
+    background-color: darkblue; /* Adjust color as needed */
+  }
+  
