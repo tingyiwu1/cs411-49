@@ -3,6 +3,10 @@ import fastify, { RouteShorthandOptions } from "fastify";
 import cors from "@fastify/cors";
 import { SpotifyApi } from "@spotify/web-api-ts-sdk";
 import OpenAI from "openai";
+import { PrismaClient, User, Post } from '@prisma/client'
+
+
+const prisma = new PrismaClient()
 
 dotenv.config();
 
@@ -52,6 +56,26 @@ server.post<{ Body: { foo: string } }>("/test", async (request, reply) => {
 });
 
 const start = async () => {
+  const userFound = await prisma.user.findUnique({
+
+    where:{ 
+        email: 'sdfhs'
+    }
+  
+  })
+  // const user = await prisma.user.create({
+  //   data: {
+  //     email: 'sdfhs',
+  //     username: 'deez',
+  //     firstname: 'sbsdfj',
+  //     lastname: 'sdhfjskd',
+  //     spotifyAPI: 123,
+
+  //   }
+  // })
+  // console.log(user)
+  console.log(userFound)
+
   try {
     await server.register(cors, {
       origin: ["http://localhost:5173"],
