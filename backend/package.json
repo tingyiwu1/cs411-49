@@ -11,8 +11,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/cookie": "^9.3.1",
     "@fastify/cors": "^9.0.1",
-    "@prisma/client": "^5.12.1",
+    "@fastify/oauth2": "^7.8.0",
+    "@prisma/client": "^5.11.0",
     "@spotify/web-api-ts-sdk": "^1.2.0",
     "axios": "^1.6.8",
     "dotenv": "^16.4.5",
