@@ -1,0 +1,40 @@
+.home-container {
+    background-color: #FFFAF3;
+  }
+  
+  .header {
+    background-color: #FBF4E9;
+    width: 1115px;
+    height: 90px;
+    border-radius: 65px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+  }
+  
+  .left-section, .right-section {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo, .title, .profile-picture {
+    cursor: pointer;
+  }
+  
+  .large-rectangle {
+    background-color: #FBF4E9;
+    width: 1115px;
+    height: 570px;
+    border-radius: 65px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  .small-image {
+    width: 50px; /* Adjust size as needed */
+    height: auto; /* Maintain aspect ratio */
+  }
+  
