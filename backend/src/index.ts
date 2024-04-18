@@ -1,18 +1,11 @@
-import dotenv from "dotenv";
-import fastify, { FastifyInstance, RouteShorthandOptions } from "fastify";
+import fastify from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
-import oauthPlugin from "@fastify/oauth2";
-import { SpotifyApi, AccessToken } from "@spotify/web-api-ts-sdk";
 import OpenAI from "openai";
-import { PrismaClient, User, Post } from "@prisma/client";
-import axios from "axios";
 import { privateRoutes } from "./routes/private";
 import { OPENAI_API_KEY, jwt_secret } from "./env";
 import { oauthRoutes } from "./routes/oauth";
 import fastifyJwt from "@fastify/jwt";
-
-const prisma = new PrismaClient();
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
