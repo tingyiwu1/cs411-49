@@ -19,9 +19,10 @@ model User {
   username   String? @unique
   firstname  String
   lastname   String
-  spotifyAPI Int     @unique
   Post       Post[]
 }
+
+
 
 model Post {
   id        Int      @id
