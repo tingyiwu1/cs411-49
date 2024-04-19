@@ -1,31 +1,25 @@
-import dotenv from "dotenv";
-import fastify, { RouteShorthandOptions } from "fastify";
+import fastify from "fastify";
 import cors from "@fastify/cors";
-import { SpotifyApi } from "@spotify/web-api-ts-sdk";
+import cookie from "@fastify/cookie";
 import OpenAI from "openai";
-import { PrismaClient, User, Post } from '@prisma/client'
+import { privateRoutes } from "./routes/private";
+import { OPENAI_API_KEY, jwt_secret } from "./env";
+import { oauthRoutes } from "./routes/oauth";
+import fastifyJwt from "@fastify/jwt";
 
-
-const prisma = new PrismaClient()
-
-dotenv.config();
-
-const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID;
-const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-
-if (!SPOTIFY_CLIENT_ID || !SPOTIFY_CLIENT_SECRET || !OPENAI_API_KEY)
-  throw new Error("Missing credentials");
-
-const spotifyApi = SpotifyApi.withClientCredentials(
-  SPOTIFY_CLIENT_ID,
-  SPOTIFY_CLIENT_SECRET
-);
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
 
-const server = fastify({ logger: true });
+let server = fastify({ logger: true });
+
+server.register(cors, {
+  origin: ["http://localhost:5173"],
+  methods: ["GET", "POST", "OPTIONS"],
+});
+server.register(cookie, {});
+server.register(fastifyJwt, { secret: jwt_secret });
+server.register(oauthRoutes);
 
 server.get("/ping", async (request, reply) => {
   return { hello: "world" };
@@ -55,14 +49,14 @@ server.post<{ Body: { foo: string } }>("/test", async (request, reply) => {
   return { body: choice };
 });
 
-const start = async () => {
-  const userFound = await prisma.user.findUnique({
+server.register(privateRoutes);
 
-    where:{ 
-        email: 'sdfhs'
-    }
-  
-  })
+const start = async () => {
+  // const userFound = await prisma.user.findUnique({
+  //   where: {
+  //     email: "sdfhs",
+  //   },
+  // });
   // const user = await prisma.user.create({
   //   data: {
   //     email: 'sdfhs',
@@ -74,14 +68,9 @@ const start = async () => {
   //   }
   // })
   // console.log(user)
-  console.log(userFound)
+  // console.log(userFound);
 
   try {
-    await server.register(cors, {
-      origin: ["http://localhost:5173"],
-      methods: ["GET", "POST", "OPTIONS"],
-    });
-
     await server.listen({ port: 3000 });
 
     const address = server.server.address();
