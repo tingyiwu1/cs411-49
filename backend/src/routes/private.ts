@@ -59,7 +59,8 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   });
 
   await server.get("/playlists", { preHandler }, async (request, reply) => {
-    // TODO
+    const playlist = await request.spotifyApi.currentUser.playlists.playlists(); 
+    return playlist; 
   });
 };
 

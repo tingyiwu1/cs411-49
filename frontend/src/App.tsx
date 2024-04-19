@@ -7,6 +7,8 @@ import axios from "axios";
 import HomePage from "./components/HomePage/HomePage2";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import LoginPage from "./components/HomePage/LoginPage/LoginPage";
+import { useEffect } from "react";
+import { useLogin } from "./hooks";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -14,7 +16,17 @@ function App() {
   } else {
     axios.defaults.baseURL = "http://localhost:3000";
   }
-
+  const {loggedIn, user} = useLogin(); 
+  useEffect(()=>{
+    if(loggedIn){ 
+       const getPlaylist = async() => {
+          const response =  await axios.get('/playlists');
+          console.log(response.data); 
+       };
+    void getPlaylist(); 
+      
+    }
+  }, [loggedIn])
   return (
     <>
       <BrowserRouter>
