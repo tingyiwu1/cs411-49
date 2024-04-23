@@ -20,7 +20,16 @@ export const oauthRoutes: FastifyPluginAsync = async (server, opts) => {
     startRedirectPath: "/login",
     callbackUri: spotifyRedirectUri,
     callbackUriParams: {},
-    scope: ["user-read-private", "user-read-email"],
+    scope: [
+      "user-read-private",
+      "user-read-email",
+      "user-read-currently-playing",
+      "user-read-playback-state",
+      "user-read-recently-played",
+      "user-library-read",
+      "user-top-read",
+      "playlist-read-private",
+    ],
   });
   server.get<{
     Querystring: {
