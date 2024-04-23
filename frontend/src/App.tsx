@@ -20,7 +20,7 @@ function App() {
   useEffect(()=>{
     if(loggedIn){ 
        const getPlaylist = async() => {
-          const response =  await axios.get('/playlists');
+          const response =  await axios.get('/evaluate');
           console.log(response.data); 
        };
     void getPlaylist(); 
