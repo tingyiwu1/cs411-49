@@ -73,6 +73,15 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     return playlist;
   });
 
+  await server.get("/choices", { preHandler }, async (request, reply) => {
+    const topArtists = await request.spotifyApi.currentUser.topItems("artists");
+    const topTracks = await request.spotifyApi.currentUser.topItems("tracks");
+    return {
+      topArtists,
+      topTracks,
+    };
+  });
+
   await server.get("/evaluate", { preHandler }, async (request, reply) => {
     const [
       playlists,
