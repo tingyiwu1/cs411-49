@@ -141,7 +141,21 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       process.stdout.write(delta ?? "");
     }
     process.stdout.write("\n");
+    await prisma.historyEntry.create({
+      data: {
+        userId: request.prismaUser.id,
+        content: response
+      }
+    })
     return response;
+  });
+  await server.get("/history", { preHandler }, async (request, reply) => {
+    const history = await prisma.historyEntry.findMany({
+      where: {
+        userId: request.prismaUser.id
+      }
+    })
+    return history;
   });
 };
 

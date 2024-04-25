@@ -21,7 +21,7 @@ function App() {
   useEffect(() => {
     if (loggedIn) {
       const getPlaylist = async () => {
-        const response = await axios.get("/evaluate");
+        const response = await axios.get("/history");
         console.log(response.data);
       };
       void getPlaylist();

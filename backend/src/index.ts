@@ -6,6 +6,7 @@ import { privateRoutes } from "./routes/private";
 import { OPENAI_API_KEY, jwt_secret } from "./env";
 import { oauthRoutes } from "./routes/oauth";
 import fastifyJwt from "@fastify/jwt";
+import { prisma } from './prisma'
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -52,23 +53,24 @@ server.post<{ Body: { foo: string } }>("/test", async (request, reply) => {
 server.register(privateRoutes);
 
 const start = async () => {
-  // const userFound = await prisma.user.findUnique({
+  // const user = await prisma.user.findUniqueOrThrow({
   //   where: {
-  //     email: "sdfhs",
+  //     id: "31lgmc5zzdgnpqohvtil7azjkb2a"
   //   },
-  // });
-  // const user = await prisma.user.create({
-  //   data: {
-  //     email: 'sdfhs',
-  //     username: 'deez',
-  //     firstname: 'sbsdfj',
-  //     lastname: 'sdhfjskd',
-  //     spotifyAPI: 123,
-
+  //   include: {
+  //     history: true
   //   }
   // })
+
+  // await prisma.historyEntry.create({
+  //   data: {
+  //     userId: user.id,
+  //     content: "sdkfjghsdkjlfg"
+  //   }
+  // })
+
+
   // console.log(user)
-  // console.log(userFound);
 
   try {
     await server.listen({ port: 3000 });
