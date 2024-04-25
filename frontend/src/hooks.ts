@@ -1,6 +1,6 @@
 import { UserProfile } from "@spotify/web-api-ts-sdk";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export const useLogin = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -15,5 +15,12 @@ export const useLogin = () => {
       void getUser();
     }
   }, []);
-  return { loggedIn: user !== null, user };
+
+  const logOut = useCallback(() => {
+    localStorage.removeItem("jwt");
+    axios.defaults.headers.common["Authorization"] = null;
+    setUser(null);
+  }, []);
+
+  return { loggedIn: user !== null, user, logOut };
 };

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useLogin } from "../../hooks";
 
 const HomePage: React.FC = () => {
-  const { loggedIn, user } = useLogin();
+  const { loggedIn, user, logOut } = useLogin();
 
   return (
     <div className="home-container">
@@ -15,10 +15,15 @@ const HomePage: React.FC = () => {
           <div className="title">MoodTune</div>
         </div>
         <div className="right-section">
-          {loggedIn || <Link to="/login">Login</Link>}
+          {loggedIn || (
+            <Link className="login-button" to="http://localhost:3000/login">
+              Login
+            </Link>
+          )}
           {user && (
             <>
               <div className="profile-name">{user.display_name}</div>
+              <button onClick={logOut}>Log Out</button>
             </>
           )}
         </div>
@@ -40,6 +45,15 @@ const HomePage: React.FC = () => {
           <div className="right-section">
             <h2>What's your mood?</h2>
             <p>Some prompts/text to conclude your mood</p>
+          </div>
+          <div className="">
+            {loggedIn ? (
+              <Link to="/choices">go to choices</Link>
+            ) : (
+              <Link className="login-button" to="http://localhost:3000/login">
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </div>
