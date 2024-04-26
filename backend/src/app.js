@@ -35,12 +35,10 @@ app.use(express.static(__dirname + '/public'))
    .use(cookieParser());
 
    app.get('/callback', function(req, res) {
-
-    // after checking the state parameter
     var code = req.query.code || null;
     var state = req.query.state || null;
     var storedState = req.cookies ? req.cookies[stateKey] : null;
-  
+
     if (state === null || state !== storedState) {
       res.redirect('/#' +
         querystring.stringify({
@@ -66,20 +64,11 @@ app.use(express.static(__dirname + '/public'))
         if (!error && response.statusCode === 200) {
           var access_token = body.access_token,
               refresh_token = body.refresh_token;
-  
-       
-          getUserPlaylists(access_token, function(err, playlists) {
-            if (err) {
-              console.error('Error fetching playlists:', err);
-              return res.redirect('/#' +
-                querystring.stringify({
-                  error: 'invalid_token'
-                }));
-            }
-  
-    
-            console.log(playlists);
-            res.send(playlists);
+
+          // Send access token and user's playlists to the frontend
+          res.json({
+            access_token: access_token,
+            playlists: playlists // assuming you have the playlists data available
           });
         } else {
           res.redirect('/#' +
@@ -89,7 +78,7 @@ app.use(express.static(__dirname + '/public'))
         }
       });
     }
-  });
+});
   
 
 app.get('/refresh_token', function(req, res) {
@@ -143,3 +132,4 @@ const getUserPlaylists = (accessToken, callback) => {
     }
   });
 }
+

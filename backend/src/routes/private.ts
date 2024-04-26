@@ -5,7 +5,8 @@ import {
   Track,
   UserProfile,
 } from "@spotify/web-api-ts-sdk";
-import { FastifyPluginAsync } from "fastify";
+import { FastifyPluginAsync} from "fastify";
+import { FastifyRequest } from 'fastify';
 import { OPENAI_API_KEY, SPOTIFY_CLIENT_ID, jwt_secret } from "../env";
 import { prisma } from "../prisma";
 import { User } from "@prisma/client";
@@ -73,32 +74,29 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     return playlist;
   });
 
-  await server.get("/choices", { preHandler }, async (request, reply) => {
-    const topArtists = await request.spotifyApi.currentUser.topItems("artists");
-    const topTracks = await request.spotifyApi.currentUser.topItems("tracks");
-    return {
-      topArtists,
-      topTracks,
-    };
-  });
+  interface EvaluateRequestBody {
+    options: string[];
+  }
+  
+  await server.post("/evaluate", { preHandler }, async (request, reply) => {
+    const { options } = request.body as EvaluateRequestBody;
 
-  await server.get("/evaluate", { preHandler }, async (request, reply) => {
+    console.log("Selected options:", options);
+    console.log("Selected :", options.join(", "));
+    // Fetch relevant data based on user's selection
     const [
       playlists,
       topArtists,
       topTracks,
       savedAlbums,
       recentlyPlayed,
-      currentlyPlaying,
-      currentQueue,
     ] = await Promise.all([
-      processPlaylists(request.spotifyApi),
-      processTopArtists(request.spotifyApi),
-      processTopTracks(request.spotifyApi),
-      processSavedAlbums(request.spotifyApi),
-      processRecentlyPlayed(request.spotifyApi),
-      processCurrentlyPlaying(request.spotifyApi),
-      processCurrentQueue(request.spotifyApi),
+      options.includes("playlists") ? processPlaylists(request.spotifyApi) : null,
+      options.includes("topArtists") ? processTopArtists(request.spotifyApi) : null,
+      options.includes("topTracks") ? processTopTracks(request.spotifyApi) : null,
+      options.includes("savedAlbums") ? processSavedAlbums(request.spotifyApi) : null,
+      options.includes("recentlyPlayed") ? processRecentlyPlayed(request.spotifyApi) : null,
+      // Add similar checks for other data
     ]);
     const info = {
       playlists,
@@ -106,20 +104,77 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       topTracks,
       savedAlbums,
       recentlyPlayed,
-      currentlyPlaying,
-      currentQueue,
-    };
+      //currentlyPlaying,
+      //currentQueue,
+   };
+
+    let dataForAnalysis = [];
+
+    // Fetch relevant data based on user's selection
+    if (options.includes("playlists")) {
+      const playlistsData = await processPlaylists(request.spotifyApi);
+      if (playlistsData) {
+        dataForAnalysis.push(playlistsData);
+      }
+    }
+
+    if (options.includes("topArtists")) {
+      const topArtistsData = await processTopArtists(request.spotifyApi);
+      if (topArtistsData) {
+        dataForAnalysis.push(topArtistsData);
+      }
+    }
+
+    if (options.includes("topTracks")) {
+      const topTracksData = await processTopTracks(request.spotifyApi);
+      if (topTracksData) {
+        dataForAnalysis.push(topTracksData);
+      }
+    }
+
+    if (options.includes("savedAlbums")) {
+      const savedAlbumsData = await processSavedAlbums(request.spotifyApi);
+      if (savedAlbumsData) {
+        dataForAnalysis.push(savedAlbumsData);
+      }
+    }
+
+    if (options.includes("recentlyPlayed")) {
+      const recentlyPlayedData = await processRecentlyPlayed(request.spotifyApi);
+      if (recentlyPlayedData) {
+        dataForAnalysis.push(recentlyPlayedData);
+      }
+    }
+    
     const stream = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          content: `You are an assistant that assesses a user's personality and mood based on the information they provide, which is from the user's spotify profile. \
-            You will factor in long-term information like top artists and top tracks to generate a holistic account of the kind of person \
-            the user is, and you will also consider short-term information like currently playing and current queue to gauge the user's mood. \
-            Make sure to cite references to particular tracks, artists, and playlists where appropriate.
+          content: `Asssigned to determine a user's MBTI trait based on their music traits, which is from the user's spotify profile.
+          In order to accomplish this, the user has selected what it is that they want analyed: ${options}. 
+          Based on these choices/options selected to be analyzed you are to generate a holistic account of the kind fo person they are and from there determine what the MBTI trait of the user is. 
+          In order to accomplish this, you could potentially do the following: dive into lyrics, mood, and themes to deciper their potential personality traits based on what they requested to be analyzed. 
+          There are 16 MBTI results and answers to choose from:
+            ISTJ - Introverted, Sensing, Thinking, Judging
+            ISFJ - Introverted, Sensing, Feeling, Judging
+            INFJ - Introverted, Intuitive, Feeling, Judging
+            INTJ - Introverted, Intuitive, Thinking, Judging
+            ISTP - Introverted, Sensing, Thinking, Perceiving
+            ISFP - Introverted, Sensing, Feeling, Perceiving
+            INFP - Introverted, Intuitive, Feeling, Perceiving
+            INTP - Introverted, Intuitive, Thinking, Perceiving
+            ESTP - Extraverted, Sensing, Thinking, Perceiving
+            ESFP - Extraverted, Sensing, Feeling, Perceiving
+            ENFP - Extraverted, Intuitive, Feeling, Perceiving
+            ENTP - Extraverted, Intuitive, Thinking, Perceiving
+            ESTJ - Extraverted, Sensing, Thinking, Judging
+            ESFJ - Extraverted, Sensing, Feeling, Judging
+            ENFJ - Extraverted, Intuitive, Feeling, Judging
+            ENTJ - Extraverted, Intuitive, Thinking, Judging
+            Make sure to cite references to where appropriate.
 
-            You will respond in markdown format, with a header for each section of information. \
+            You will respond in markdown format, with a header for each section of information. Particularly what they selected in options \
             `,
         },
         {
@@ -141,21 +196,14 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       process.stdout.write(delta ?? "");
     }
     process.stdout.write("\n");
-    await prisma.historyEntry.create({
-      data: {
-        userId: request.prismaUser.id,
-        content: response
-      }
-    })
     return response;
-  });
-  await server.get("/history", { preHandler }, async (request, reply) => {
-    const history = await prisma.historyEntry.findMany({
-      where: {
-        userId: request.prismaUser.id
-      }
-    })
-    return history;
+
+
+    // // Pass data to OpenAI API for analysis
+    // const analysisResult = await analyzeData(dataForAnalysis, request.openAI);
+
+    // // Return analysis result
+    // return analysisResult;
   });
 };
 
@@ -288,6 +336,67 @@ async function processCurrentQueue(spotifyApi: SpotifyApi) {
   }
 }
 
+async function analyzeData(dataForAnalysis: any[], openAI: OpenAI) {
+  try {
+    // Construct the message for the OpenAI API based on the data for analysis
+    const messages = [
+      {
+        role: "system",
+        content: `You are an assignment who is trying to determine a user's MBTI trait based on their music traits, which is from the user's spotify profile.
+        You will dive into the lyrics, mood, and themes to decipher their potential personality traits.
+        Other things that can you factor in are the user's top artists and top tracks to generate a holistic account of the kind of person and from there be able to tell the MBTI trait of the user.
+        There are 16 MBTI results and answers to choose from:
+          ISTJ - Introverted, Sensing, Thinking, Judging
+          ISFJ - Introverted, Sensing, Feeling, Judging
+          INFJ - Introverted, Intuitive, Feeling, Judging
+          INTJ - Introverted, Intuitive, Thinking, Judging
+          ISTP - Introverted, Sensing, Thinking, Perceiving
+          ISFP - Introverted, Sensing, Feeling, Perceiving
+          INFP - Introverted, Intuitive, Feeling, Perceiving
+          INTP - Introverted, Intuitive, Thinking, Perceiving
+          ESTP - Extraverted, Sensing, Thinking, Perceiving
+          ESFP - Extraverted, Sensing, Feeling, Perceiving
+          ENFP - Extraverted, Intuitive, Feeling, Perceiving
+          ENTP - Extraverted, Intuitive, Thinking, Perceiving
+          ESTJ - Extraverted, Sensing, Thinking, Judging
+          ESFJ - Extraverted, Sensing, Feeling, Judging
+          ENFJ - Extraverted, Intuitive, Feeling, Judging
+          ENTJ - Extraverted, Intuitive, Thinking, Judging
+        Make sure to cite references to particular tracks, artists, and playlists where appropriate.`,
+      },
+    ];
+
+    // Add user data from dataForAnalysis to messages
+    dataForAnalysis.forEach((data) => {
+      // Assuming each data object has a name property
+      messages.push({
+        role: "user",
+        content: `Data: ${data.name}`, // Adjust content as needed based on your data structure
+      });
+    });
+
+    // Call OpenAI API for chat completions
+    const response = await openAI.completions.create({
+      model: "text-davinci-003", // Use the appropriate model for text generation
+      prompt: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n'),
+      max_tokens: 150, // Adjust max tokens as needed
+      temperature: 0.7, // Adjust temperature as needed
+      top_p: 1.0,
+      frequency_penalty: 0.0,
+      presence_penalty: 0.0,
+    });
+
+    // Extract and return the completion from the response
+    const completion = response.choices[0].text;
+    return completion;
+  } catch (error) {
+    console.error("Error analyzing data with OpenAI:", error);
+    throw new Error("Error analyzing data with OpenAI");
+  }
+}
+
+export { analyzeData };
+
 declare module "fastify" {
   interface FastifyRequest {
     spotifyApi: SpotifyApi;
@@ -296,3 +405,4 @@ declare module "fastify" {
     openAI: OpenAI;
   }
 }
+
