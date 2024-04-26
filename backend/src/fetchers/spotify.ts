@@ -1,10 +1,14 @@
 import { SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
 import * as data from "../../../sample_data.json";
 
+const USE_LOCAL_DATA = false;
+
 export async function processPlaylists(spotifyApi: SpotifyApi) {
   try {
-    // const playlists = await spotifyApi.currentUser.playlists.playlists();
-    const playlists = data.playlists;
+    const playlists = USE_LOCAL_DATA
+      ? data.playlists
+      : await spotifyApi.currentUser.playlists.playlists();
+
     // const playlistItems = await Promise.all(
     //   playlists.items.map(async (playlist) => {
     //     const tracks = await spotifyApi.playlists.getPlaylistItems(
@@ -39,8 +43,9 @@ export async function processPlaylists(spotifyApi: SpotifyApi) {
 }
 export async function processTopArtists(spotifyApi: SpotifyApi) {
   try {
-    // const topArtists = await spotifyApi.currentUser.topItems("artists");
-    const topArtists = data.topArtists;
+    const topArtists = USE_LOCAL_DATA
+      ? data.topArtists
+      : await spotifyApi.currentUser.topItems("artists");
     return topArtists.items.map((artist) => {
       return {
         name: artist.name,
@@ -55,8 +60,9 @@ export async function processTopArtists(spotifyApi: SpotifyApi) {
 }
 export async function processTopTracks(spotifyApi: SpotifyApi) {
   try {
-    // const topTracks = await spotifyApi.currentUser.topItems("tracks");
-    const topTracks = data.topTracks;
+    const topTracks = USE_LOCAL_DATA
+      ? data.topTracks
+      : await spotifyApi.currentUser.topItems("tracks");
     return topTracks.items.map((track) => {
       return {
         name: track.name,
@@ -71,8 +77,9 @@ export async function processTopTracks(spotifyApi: SpotifyApi) {
 }
 export async function processSavedAlbums(spotifyApi: SpotifyApi) {
   try {
-    // const savedAlbums = await spotifyApi.currentUser.albums.savedAlbums();
-    const savedAlbums = data.savedAlbums;
+    const savedAlbums = USE_LOCAL_DATA
+      ? data.savedAlbums
+      : await spotifyApi.currentUser.albums.savedAlbums();
     return savedAlbums.items.map((album) => {
       return {
         name: album.album.name,
@@ -90,8 +97,9 @@ export async function processRecentlyPlayed(
   after?: Date
 ) {
   try {
-    // const recentlyPlayed = await spotifyApi.player.getRecentlyPlayedTracks();
-    const recentlyPlayed = data.recentlyPlayed;
+    const recentlyPlayed = USE_LOCAL_DATA
+      ? data.recentlyPlayed
+      : await spotifyApi.player.getRecentlyPlayedTracks();
     return recentlyPlayed.items
       .filter((item) => {
         const playedAt = new Date(item.played_at);
@@ -112,7 +120,9 @@ export async function processRecentlyPlayed(
 
 export async function processCurrentlyPlaying(spotifyApi: SpotifyApi) {
   try {
-    const currentlyPlaying = await spotifyApi.player.getCurrentlyPlayingTrack();
+    const currentlyPlaying = USE_LOCAL_DATA
+      ? data.currentlyPlaying
+      : await spotifyApi.player.getCurrentlyPlayingTrack();
     if (!currentlyPlaying) return null;
     if (currentlyPlaying.item.type === "episode") return null;
     const item = currentlyPlaying.item as Track;

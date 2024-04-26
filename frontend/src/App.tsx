@@ -8,6 +8,7 @@ import AssessmentPage from "./components/AssessmentPage/AssessmentPage";
 import {
   BrowserRouter,
   Link,
+  Navigate,
   Route,
   Routes,
   useNavigate,
@@ -67,9 +68,20 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/assess" element={<AssessmentPage />} />
-          <Route path="/assessments" element={<AssessmentsListPage />} />
-          <Route path="/assessments/:id" element={<AssessmentResultsPage />} />
+          <Route
+            path="/assess"
+            element={loggedIn ? <AssessmentPage /> : <Navigate to={"/"} />}
+          />
+          <Route
+            path="/assessments"
+            element={loggedIn ? <AssessmentsListPage /> : <Navigate to={"/"} />}
+          />
+          <Route
+            path="/assessments/:id"
+            element={
+              loggedIn ? <AssessmentResultsPage /> : <Navigate to={"/"} />
+            }
+          />
         </Routes>
       </BrowserRouter>
     </>
