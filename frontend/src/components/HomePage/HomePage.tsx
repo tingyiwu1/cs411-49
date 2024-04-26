@@ -1,24 +1,21 @@
-import React, { useEffect, useState } from "react";
-import axios from "axios";
+import React from "react";
+import { useLogin } from "../../hooks";
+import { Link } from "react-router-dom";
 
 export const HomePage: React.FC = () => {
-  const [data, setData] = useState<string | null>(null);
-
-  useEffect(() => {
-    const load = async () => {
-      const response = await axios.post("/test", {
-        foo: "Never gonna give you up",
-      });
-      setData(response.data.body);
-    };
-
-    load();
-  }, []);
+  const { loggedIn, logOut } = useLogin();
 
   return (
     <div>
       <h1>Home Page</h1>
-      <p>{data}</p>
+      {loggedIn ? (
+        <>
+          <Link to="/assess">Assess</Link>
+          <button onClick={logOut}>Log Out</button>
+        </>
+      ) : (
+        <Link to="http://localhost:3000/login">Login</Link>
+      )}
     </div>
   );
 };

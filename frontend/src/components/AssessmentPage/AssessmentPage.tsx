@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import "./Home.css";
+import "./AssessmentPage.css";
 import axios from "axios";
 import { Link, useNavigate } from "react-router-dom"; // Import useNavigate instead of useHistory
 import { useLogin } from "../../hooks";
-import LogoImage from '../sound-waves.png';
+import LogoImage from "../sound-waves.png";
 
-
-const HomePage: React.FC = () => {
+const AssessmentPage: React.FC = () => {
   const { loggedIn, user } = useLogin();
   const navigate = useNavigate(); // Access navigate function instead of useHistory
   const [playlists, setPlaylists] = useState<any[]>([]);
@@ -15,9 +14,9 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("/evaluate");
-        if (response.data && Array.isArray(response.data.playlists)) {
-          setPlaylists(response.data.playlists);
+        const response = await axios.get("/playlists");
+        if (response.data && Array.isArray(response.data)) {
+          // setPlaylists(response.data);
         } else {
           console.error("Invalid playlists data:", response.data);
         }
@@ -25,16 +24,13 @@ const HomePage: React.FC = () => {
         console.error("Error fetching playlists:", error);
       }
     };
-  
+
     if (loggedIn) {
       fetchData();
     }
   }, [loggedIn]);
-  
 
-  const handleCheckboxChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setSelectedOptions((prevSelectedOptions) => {
       if (prevSelectedOptions.includes(value)) {
@@ -43,7 +39,7 @@ const HomePage: React.FC = () => {
         return [...prevSelectedOptions, value];
       }
     });
-  };  
+  };
 
   const handleSubmit = async () => {
     console.log(selectedOptions);
@@ -74,8 +70,8 @@ const HomePage: React.FC = () => {
           {/* User profile name */}
           {user && <div className="profile-name">{user.display_name}</div>}
         </div>
-      </div>      
-  
+      </div>
+
       {/* Main Content */}
       <div className="content-container">
         <div className="home-container">
@@ -141,7 +137,7 @@ const HomePage: React.FC = () => {
         </div>
       </div>
     </>
-  );  
+  );
 };
 
-export default HomePage;
+export default AssessmentPage;

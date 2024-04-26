@@ -9,8 +9,7 @@ import { FastifyPluginAsync } from "fastify";
 import { FastifyRequest } from "fastify";
 import { OPENAI_API_KEY, SPOTIFY_CLIENT_ID, jwt_secret } from "../env";
 import { prisma } from "../prisma";
-import { User } from "@prisma/client";
-import * as data from "../../../sample_data.json";
+import { Assessment, User } from "@prisma/client";
 import OpenAI from "openai";
 import {
   ChatCompletionMessage,
@@ -22,6 +21,13 @@ import {
   AssessmentMBTI,
   AssessmentPersonality,
 } from "../types";
+import {
+  processPlaylists,
+  processRecentlyPlayed,
+  processSavedAlbums,
+  processTopArtists,
+  processTopTracks,
+} from "../fetchers/spotify";
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -57,7 +63,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
         );
         request.spotifyUser = await request.spotifyApi.currentUser.profile();
         if (!request.spotifyUser) throw new Error("get user failed");
-        request.prismaUser = await prisma.user.upsert({
+        const prismaUser = await prisma.user.upsert({
           where: { id: request.spotifyUser.id },
           update: {
             email: request.spotifyUser.email,
@@ -69,6 +75,33 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
             displayName: request.spotifyUser.display_name,
           },
         });
+        const selectedAssessments = await prisma.assessment.findMany({
+          where: {
+            userId: prismaUser.id,
+            selected: true,
+          },
+        });
+        let selectedAssessment = null;
+        if (selectedAssessments.length > 1) {
+          const [first, ...rest] = selectedAssessments;
+          if (rest) {
+            await prisma.assessment.updateMany({
+              where: {
+                id: {
+                  in: rest.map((a) => a.id),
+                },
+              },
+              data: {
+                selected: false,
+              },
+            });
+          }
+          selectedAssessment = first;
+        }
+        request.prismaUser = {
+          ...prismaUser,
+          selectedAssessment,
+        };
         if (!request.prismaUser) throw new Error("get prisma user failed");
       } catch (e) {
         console.log(e);
@@ -82,8 +115,8 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   });
 
   server.get("/playlists", { preHandler }, async (request, reply) => {
-    const playlist = await request.spotifyApi.currentUser.playlists.playlists();
-    return playlist;
+    const playlists = await processPlaylists(request.spotifyApi);
+    return playlists;
   });
 
   // Define a new endpoint to retrieve the message
@@ -146,11 +179,11 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
 
           You will respond with only a JSON object in the following format:
           {
-            "playlists": "analysis",
-            "topArtists": "analysis",
-            "topTracks": "analysis",
-            "savedAlbums": "analysis",
-            "recentlyPlayed": "analysis"
+            "playlists": {analysis string},
+            "topArtists": {analysis string},
+            "topTracks": {analysis string},
+            "savedAlbums": {analysis string},
+            "recentlyPlayed": {analysis string}
           }
           Only include the categories that the user selected. If a particular field is missing from the provided data, do not include it in the response object. 
           `,
@@ -286,14 +319,20 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       mbtiTraits,
     };
 
-    await prisma.assessment.create({
+    const assessment = await prisma.assessment.create({
       data: {
         userId: request.prismaUser.id,
         content: JSON.stringify(assessmentContent),
+        selected: request.prismaUser.selectedAssessment == null,
       },
     });
 
-    return assessmentContent;
+    return {
+      id: assessment.id,
+      createdAt: assessment.createdAt.toISOString(),
+      selected: assessment.selected,
+      ...assessmentContent,
+    };
   });
 
   server.get("/assessments", { preHandler }, async (request, reply) => {
@@ -302,149 +341,85 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
         userId: request.prismaUser.id,
       },
     });
-    return assessments;
+    return assessments.map((a) => ({
+      id: a.id,
+      createdAt: a.createdAt.toISOString(),
+      selected: a.selected,
+      ...JSON.parse(a.content),
+    }));
+  });
+
+  server.get<{
+    Params: { id: string };
+  }>("/assessments/:id", { preHandler }, async (request, reply) => {
+    const { id } = request.params;
+    const assessment = await prisma.assessment.findUnique({
+      where: {
+        id: id,
+      },
+    });
+    if (!assessment) {
+      reply.code(404).send({ error: "Assessment not found" });
+    } else {
+      return {
+        id: assessment.id,
+        createdAt: assessment.createdAt.toISOString(),
+        selected: assessment.selected,
+        ...JSON.parse(assessment.content),
+      };
+    }
+  });
+
+  server.get("/selected_assessment", { preHandler }, async (request, reply) => {
+    const assessment = request.prismaUser.selectedAssessment;
+    if (!assessment) {
+      return null;
+    } else {
+      return {
+        id: assessment.id,
+        createdAt: assessment.createdAt.toISOString(),
+        selected: assessment.selected,
+        ...JSON.parse(assessment.content),
+      };
+    }
+  });
+
+  server.post<{
+    Body: {
+      assessmentId: string;
+    };
+  }>("/select_assessment", { preHandler }, async (request, reply) => {
+    const { assessmentId } = request.body;
+    try {
+      const assessment = await prisma.assessment.findUnique({
+        where: {
+          id: assessmentId,
+        },
+      });
+      if (!assessment) {
+        reply.code(404).send({ error: "Assessment not found" });
+      } else {
+        return {
+          id: assessment.id,
+          createdAt: assessment.createdAt.toISOString(),
+          selected: assessment.selected,
+          ...JSON.parse(assessment.content),
+        };
+      }
+    } catch (error) {
+      console.error("Error selecting assessment:", error);
+      reply.code(500).send({ error: "Internal Server Error" });
+    }
   });
 };
-
-async function processPlaylists(spotifyApi: SpotifyApi) {
-  try {
-    // const playlists = await spotifyApi.currentUser.playlists.playlists();
-    const playlists = data.playlists;
-    // const playlistItems = await Promise.all(
-    //   playlists.items.map(async (playlist) => {
-    //     const tracks = await spotifyApi.playlists.getPlaylistItems(
-    //       playlist.id,
-    //       undefined,
-    //       "items(track(name, artists, album(name)))"
-    //     );
-    //     return {
-    //       name: playlist.name,
-    //       description: playlist.description,
-    //       tracks: tracks.items.map((item) => {
-    //         return {
-    //           name: item.track.name,
-    //           artists: item.track.artists.map((artist) => artist.name),
-    //           album: item.track.album.name,
-    //         };
-    //       }),
-    //     };
-    //   })
-    // );
-    return playlists.items.map((playlist, i) => {
-      return {
-        name: playlist.name,
-        description: playlist.description,
-        // tracks: playlistItems[i].tracks,
-      };
-    });
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
-}
-async function processTopArtists(spotifyApi: SpotifyApi) {
-  try {
-    // const topArtists = await spotifyApi.currentUser.topItems("artists");
-    const topArtists = data.topArtists;
-    return topArtists.items.map((artist) => {
-      return {
-        name: artist.name,
-        genres: artist.genres,
-        popularity: artist.popularity,
-      };
-    });
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
-}
-async function processTopTracks(spotifyApi: SpotifyApi) {
-  try {
-    // const topTracks = await spotifyApi.currentUser.topItems("tracks");
-    const topTracks = data.topTracks;
-    return topTracks.items.map((track) => {
-      return {
-        name: track.name,
-        artists: track.artists.map((artist) => artist.name),
-        album: track.album.name,
-      };
-    });
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
-}
-async function processSavedAlbums(spotifyApi: SpotifyApi) {
-  try {
-    // const savedAlbums = await spotifyApi.currentUser.albums.savedAlbums();
-    const savedAlbums = data.savedAlbums;
-    return savedAlbums.items.map((album) => {
-      return {
-        name: album.album.name,
-        artists: album.album.artists.map((artist) => artist.name),
-        releaseDate: album.album.release_date,
-      };
-    });
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
-}
-async function processRecentlyPlayed(spotifyApi: SpotifyApi) {
-  try {
-    // const recentlyPlayed = await spotifyApi.player.getRecentlyPlayedTracks();
-    const recentlyPlayed = data.recentlyPlayed;
-    return recentlyPlayed.items.map((item) => {
-      return {
-        name: item.track.name,
-        artists: item.track.artists.map((artist) => artist.name),
-        album: item.track.album.name,
-      };
-    });
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
-}
-async function processCurrentlyPlaying(spotifyApi: SpotifyApi) {
-  try {
-    const currentlyPlaying = await spotifyApi.player.getCurrentlyPlayingTrack();
-    if (!currentlyPlaying) return null;
-    if (currentlyPlaying.item.type === "episode") return null;
-    const item = currentlyPlaying.item as Track;
-    return {
-      name: currentlyPlaying.item.name,
-      artists: item.artists.map((artist) => artist.name),
-      album: item.album.name,
-    };
-  } catch (e) {
-    console.log(e);
-    return null;
-  }
-}
-async function processCurrentQueue(spotifyApi: SpotifyApi) {
-  try {
-    const currentQueue = await spotifyApi.player.getUsersQueue();
-    return currentQueue.queue.map((item) => {
-      if (item.type === "episode") return null;
-      const track = item as Track;
-      return {
-        name: track.name,
-        artists: track.artists.map((artist) => artist.name),
-        album: track.album.name,
-      };
-    });
-  } catch (e) {
-    console.log("failed to get current queue; probably because not premium");
-    return null;
-  }
-}
 
 declare module "fastify" {
   interface FastifyRequest {
     spotifyApi: SpotifyApi;
     spotifyUser: UserProfile;
-    prismaUser: User;
+    prismaUser: User & {
+      selectedAssessment: Assessment | null;
+    };
     openAI: OpenAI;
   }
 }
