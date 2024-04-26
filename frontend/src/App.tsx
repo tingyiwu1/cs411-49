@@ -10,6 +10,7 @@ import LoginPage from "./components/LoginPage/LoginPage";
 import { useEffect } from "react";
 import { useLogin } from "./hooks";
 import ChoicesPage from "./components/ChoicesPage/ChoicesPage";
+import MessagePage from "./components/MessagePage/MessagePage";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -34,6 +35,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/choices" element={<ChoicesPage />} />
+          <Route path="/MessagePage" element={<MessagePage />} />
         </Routes>
       </BrowserRouter>
     </>

@@ -18,6 +18,7 @@ const openai = new OpenAI({
 
 export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   // await server.register(fastifyJwt, { secret: jwt_secret });
+  let generatedMessage = ''; // Variable to store the generated message
   await server.register(fastifyAuth);
 
   server.decorate("spotifyApi", null);
@@ -78,6 +79,17 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     options: string[];
   }
   
+  // Define a new endpoint to retrieve the message
+  server.get("/message", async (request, reply) => {
+    try {
+      // Send the generated message in the response
+      reply.send({ message: generatedMessage });
+    } catch (error) {
+      console.error("Error retrieving message:", error);
+      reply.code(500).send({ error: "Internal Server Error" });
+    }
+  });  
+
   await server.post("/evaluate", { preHandler }, async (request, reply) => {
     const { options } = request.body as EvaluateRequestBody;
 
@@ -107,44 +119,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       //currentlyPlaying,
       //currentQueue,
    };
-
-    let dataForAnalysis = [];
-
-    // Fetch relevant data based on user's selection
-    if (options.includes("playlists")) {
-      const playlistsData = await processPlaylists(request.spotifyApi);
-      if (playlistsData) {
-        dataForAnalysis.push(playlistsData);
-      }
-    }
-
-    if (options.includes("topArtists")) {
-      const topArtistsData = await processTopArtists(request.spotifyApi);
-      if (topArtistsData) {
-        dataForAnalysis.push(topArtistsData);
-      }
-    }
-
-    if (options.includes("topTracks")) {
-      const topTracksData = await processTopTracks(request.spotifyApi);
-      if (topTracksData) {
-        dataForAnalysis.push(topTracksData);
-      }
-    }
-
-    if (options.includes("savedAlbums")) {
-      const savedAlbumsData = await processSavedAlbums(request.spotifyApi);
-      if (savedAlbumsData) {
-        dataForAnalysis.push(savedAlbumsData);
-      }
-    }
-
-    if (options.includes("recentlyPlayed")) {
-      const recentlyPlayedData = await processRecentlyPlayed(request.spotifyApi);
-      if (recentlyPlayedData) {
-        dataForAnalysis.push(recentlyPlayedData);
-      }
-    }
     
     const stream = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
@@ -155,6 +129,8 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
           In order to accomplish this, the user has selected what it is that they want analyed: ${options}. 
           Based on these choices/options selected to be analyzed you are to generate a holistic account of the kind fo person they are and from there determine what the MBTI trait of the user is. 
           In order to accomplish this, you could potentially do the following: dive into lyrics, mood, and themes to deciper their potential personality traits based on what they requested to be analyzed. 
+          Before presenting the analyzed paragraph indicate what the selected options are, a user profile overview, then personality analysis based on music preferences.
+          Finally, indicate the MBTI Trait Prediction
           There are 16 MBTI results and answers to choose from:
             ISTJ - Introverted, Sensing, Thinking, Judging
             ISFJ - Introverted, Sensing, Feeling, Judging
@@ -193,19 +169,16 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     for await (const message of stream) {
       const delta = message.choices[0]?.delta.content;
       response += delta ?? "";
+      generatedMessage += delta ?? "";
       process.stdout.write(delta ?? "");
     }
     process.stdout.write("\n");
-    return response;
-
-
-    // // Pass data to OpenAI API for analysis
-    // const analysisResult = await analyzeData(dataForAnalysis, request.openAI);
-
-    // // Return analysis result
-    // return analysisResult;
+    return { response, generatedMessage };
   });
 };
+
+
+
 
 async function processPlaylists(spotifyApi: SpotifyApi) {
   try {
@@ -335,67 +308,6 @@ async function processCurrentQueue(spotifyApi: SpotifyApi) {
     return null;
   }
 }
-
-async function analyzeData(dataForAnalysis: any[], openAI: OpenAI) {
-  try {
-    // Construct the message for the OpenAI API based on the data for analysis
-    const messages = [
-      {
-        role: "system",
-        content: `You are an assignment who is trying to determine a user's MBTI trait based on their music traits, which is from the user's spotify profile.
-        You will dive into the lyrics, mood, and themes to decipher their potential personality traits.
-        Other things that can you factor in are the user's top artists and top tracks to generate a holistic account of the kind of person and from there be able to tell the MBTI trait of the user.
-        There are 16 MBTI results and answers to choose from:
-          ISTJ - Introverted, Sensing, Thinking, Judging
-          ISFJ - Introverted, Sensing, Feeling, Judging
-          INFJ - Introverted, Intuitive, Feeling, Judging
-          INTJ - Introverted, Intuitive, Thinking, Judging
-          ISTP - Introverted, Sensing, Thinking, Perceiving
-          ISFP - Introverted, Sensing, Feeling, Perceiving
-          INFP - Introverted, Intuitive, Feeling, Perceiving
-          INTP - Introverted, Intuitive, Thinking, Perceiving
-          ESTP - Extraverted, Sensing, Thinking, Perceiving
-          ESFP - Extraverted, Sensing, Feeling, Perceiving
-          ENFP - Extraverted, Intuitive, Feeling, Perceiving
-          ENTP - Extraverted, Intuitive, Thinking, Perceiving
-          ESTJ - Extraverted, Sensing, Thinking, Judging
-          ESFJ - Extraverted, Sensing, Feeling, Judging
-          ENFJ - Extraverted, Intuitive, Feeling, Judging
-          ENTJ - Extraverted, Intuitive, Thinking, Judging
-        Make sure to cite references to particular tracks, artists, and playlists where appropriate.`,
-      },
-    ];
-
-    // Add user data from dataForAnalysis to messages
-    dataForAnalysis.forEach((data) => {
-      // Assuming each data object has a name property
-      messages.push({
-        role: "user",
-        content: `Data: ${data.name}`, // Adjust content as needed based on your data structure
-      });
-    });
-
-    // Call OpenAI API for chat completions
-    const response = await openAI.completions.create({
-      model: "text-davinci-003", // Use the appropriate model for text generation
-      prompt: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n'),
-      max_tokens: 150, // Adjust max tokens as needed
-      temperature: 0.7, // Adjust temperature as needed
-      top_p: 1.0,
-      frequency_penalty: 0.0,
-      presence_penalty: 0.0,
-    });
-
-    // Extract and return the completion from the response
-    const completion = response.choices[0].text;
-    return completion;
-  } catch (error) {
-    console.error("Error analyzing data with OpenAI:", error);
-    throw new Error("Error analyzing data with OpenAI");
-  }
-}
-
-export { analyzeData };
 
 declare module "fastify" {
   interface FastifyRequest {

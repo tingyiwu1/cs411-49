@@ -1,22 +1,22 @@
 import React, { useState, useEffect } from "react";
 import "./Home.css";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; // Import useNavigate instead of useHistory
 import { useLogin } from "../../hooks";
+import LogoImage from '../sound-waves.png';
+
 
 const HomePage: React.FC = () => {
   const { loggedIn, user } = useLogin();
+  const navigate = useNavigate(); // Access navigate function instead of useHistory
   const [playlists, setPlaylists] = useState<any[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch user's playlists from the backend
         const response = await axios.get("/evaluate");
-        // Check if the response contains playlists
         if (response.data && Array.isArray(response.data.playlists)) {
-          // Set playlist names in state
           setPlaylists(response.data.playlists);
         } else {
           console.error("Invalid playlists data:", response.data);
@@ -47,33 +47,34 @@ const HomePage: React.FC = () => {
 
   const handleSubmit = async () => {
     console.log(selectedOptions);
-    // Send selected options to backend for analysis
     try {
       const response = await axios.post("/evaluate", {
         options: selectedOptions,
       });
       console.log(response.data);
-      // Handle response from backend (which will contain the MBTI type)
-      // Display the MBTI type to the user or take further actions based on it
+      // Redirect to MessagePage after submitting
+      navigate("../MessagePage/MessagePage");
     } catch (error) {
       console.error("Error analyzing data:", error);
-      // Handle error
     }
-  }; 
+  };
 
   return (
     <>
       {/* Header */}
       <div className="header">
         <div className="left-section">
-          <div className="logo">Logo</div>
-          <div className="title">SoundSoul</div>
+          {/* Logo */}
+          <img src={LogoImage} alt="Logo" className="logo" />
         </div>
+        <div className="title">SoundSoul</div>
         <div className="right-section">
+          {/* Login button */}
           {loggedIn || <Link to="/login">Login</Link>}
+          {/* User profile name */}
           {user && <div className="profile-name">{user.display_name}</div>}
         </div>
-      </div>
+      </div>      
   
       {/* Main Content */}
       <div className="content-container">
@@ -90,6 +91,7 @@ const HomePage: React.FC = () => {
                 />{" "}
                 Top Artists
               </label>
+              {/* Render other checkboxes */}
               <label>
                 <input
                   type="checkbox"

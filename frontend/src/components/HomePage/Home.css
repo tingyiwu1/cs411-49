@@ -23,6 +23,32 @@
   cursor: pointer;
 }
 
+.left-section {
+  margin-right: auto; /* Pushes the middle and right sections to the right */
+}
+
+.right-section {
+  margin-left: auto; /* Pushes the login button to the right */
+}
+
+.logo {
+  width: 30px; /* Adjust size as needed */
+  height: auto; /* Maintain aspect ratio */
+  margin-right: 10px; /* Add spacing between logo and title */
+}
+
+.title {
+  font-size: 24px; /* Adjust font size as needed */
+  font-weight: bold; /* Make text bold */
+}
+
+.right-section a {
+  text-decoration: none; /* Remove underline from the link */
+  color: black; /* Adjust color as needed */
+  padding: 10px 20px; /* Add padding to the login button */
+  border-radius: 5px; /* Add rounded corners to the button */
+}
+
 .large-rectangle {
   background-color: #FBF4E9;
   width: 80%; /* Adjusted to take up 80% of the page width */
