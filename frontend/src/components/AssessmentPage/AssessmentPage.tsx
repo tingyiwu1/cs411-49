@@ -4,6 +4,7 @@ import axios from "axios";
 import { Link, useNavigate } from "react-router-dom"; // Import useNavigate instead of useHistory
 import { useLogin } from "../../hooks";
 import LogoImage from "../sound-waves.png";
+import { Assessment } from "../../types";
 
 const AssessmentPage: React.FC = () => {
   const { loggedIn, user } = useLogin();
@@ -44,12 +45,12 @@ const AssessmentPage: React.FC = () => {
   const handleSubmit = async () => {
     console.log(selectedOptions);
     try {
-      const response = await axios.post("/evaluate", {
+      const response = await axios.post<Assessment>("/evaluate", {
         options: selectedOptions,
       });
       console.log(response.data);
-      // Redirect to MessagePage after submitting
-      navigate("/MessagePage/");
+      const assessment = response.data;
+      navigate(`/assessments/${assessment.id}`);
     } catch (error) {
       console.error("Error analyzing data:", error);
     }

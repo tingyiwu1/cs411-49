@@ -20,8 +20,8 @@ export const AssessmentsListPage: React.FC = () => {
           <h2>{assessment.id}</h2>
           <Link to={`/assessments/${assessment.id}`}>View</Link>
           <p>
-            {assessment.mbtiTraits.map((t) => (
-              <>{t.trait} </>
+            {assessment.mbtiTraits.map((t, i) => (
+              <span key={`${assessment.id}-${i}`}>{t.trait} </span>
             ))}
           </p>
           <p>{assessment.personality}</p>
