@@ -20,13 +20,12 @@ const ChoicesPage = () => {
       setChoices(response.data);
     };
     void getChoice();
-    console.log('sdfhsdjkf')
+    console.log("sdfhsdjkf");
   }, []);
 
   useEffect(() => {
-    console.log('look a reload')
-
-  }, [])
+    console.log("look a reload");
+  }, []);
 
   const tracks =
     choices?.topTracks.items.map((track) => {
@@ -40,13 +39,21 @@ const ChoicesPage = () => {
     <div>
       <h1>Choices Page</h1>
       <div>{thing}</div>
-      <button onClick={() => {
-        setThing(thing + 1)
-      }}>click me</button>
+      <button
+        onClick={() => {
+          setThing(thing + 1);
+        }}
+      >
+        click me
+      </button>
       <div>{thing2}</div>
-      <button onClick={() => {
-        thing2++
-      }}>click me</button>
+      <button
+        onClick={() => {
+          thing2++;
+        }}
+      >
+        click me
+      </button>
       {tracks.map((track) => {
         return (
           <div>

@@ -10,6 +10,7 @@ import LoginPage from "./components/LoginPage/LoginPage";
 import { useEffect } from "react";
 import { useLogin } from "./hooks";
 import ChoicesPage from "./components/ChoicesPage/ChoicesPage";
+import { HistoryPage } from "./components/HistoryPage/HistoryPage";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -21,7 +22,7 @@ function App() {
   useEffect(() => {
     if (loggedIn) {
       const getPlaylist = async () => {
-        const response = await axios.get("/history");
+        const response = await axios.get("/evaluate");
         console.log(response.data);
       };
       void getPlaylist();
@@ -34,6 +35,7 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/choices" element={<ChoicesPage />} />
+          <Route path="/history" element={<HistoryPage />} />
         </Routes>
       </BrowserRouter>
     </>

@@ -9,6 +9,7 @@ import { FastifyPluginAsync } from "fastify";
 import { OPENAI_API_KEY, SPOTIFY_CLIENT_ID, jwt_secret } from "../env";
 import { prisma } from "../prisma";
 import { User } from "@prisma/client";
+import data from "../../../sample_data.json";
 import OpenAI from "openai";
 
 const openai = new OpenAI({
@@ -64,16 +65,11 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     },
   ]);
 
-  await server.get("/me", { preHandler }, async (request, reply) => {
+  server.get("/me", { preHandler }, async (request, reply) => {
     return request.spotifyUser;
   });
 
-  await server.get("/playlists", { preHandler }, async (request, reply) => {
-    const playlist = await request.spotifyApi.currentUser.playlists.playlists();
-    return playlist;
-  });
-
-  await server.get("/choices", { preHandler }, async (request, reply) => {
+  server.get("/choices", { preHandler }, async (request, reply) => {
     const topArtists = await request.spotifyApi.currentUser.topItems("artists");
     const topTracks = await request.spotifyApi.currentUser.topItems("tracks");
     return {
@@ -82,7 +78,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     };
   });
 
-  await server.get("/evaluate", { preHandler }, async (request, reply) => {
+  server.get("/evaluate", { preHandler }, async (request, reply) => {
     const [
       playlists,
       topArtists,
@@ -144,17 +140,17 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     await prisma.historyEntry.create({
       data: {
         userId: request.prismaUser.id,
-        content: response
-      }
-    })
+        content: response,
+      },
+    });
     return response;
   });
-  await server.get("/history", { preHandler }, async (request, reply) => {
+  server.get("/history", { preHandler }, async (request, reply) => {
     const history = await prisma.historyEntry.findMany({
       where: {
-        userId: request.prismaUser.id
-      }
-    })
+        userId: request.prismaUser.id,
+      },
+    });
     return history;
   });
 };
