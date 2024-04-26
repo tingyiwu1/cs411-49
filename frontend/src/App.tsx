@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { useLogin } from "./hooks";
 import ChoicesPage from "./components/ChoicesPage/ChoicesPage";
 import { HistoryPage } from "./components/HistoryPage/HistoryPage";
+import MessagePage from "./components/MessagePage/MessagePage";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -36,6 +37,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/choices" element={<ChoicesPage />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/MessagePage" element={<MessagePage />} />
         </Routes>
       </BrowserRouter>
     </>
