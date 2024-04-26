@@ -14,16 +14,17 @@ datasource db {
 }
 
 model User {
-  id          String         @id
-  email       String         @unique
+  id          String       @id
+  email       String       @unique
   displayName String
-  history     HistoryEntry[]
+  createdAt   DateTime     @default(now())
+  assessments Assessment[]
 }
 
-model HistoryEntry {
+model Assessment {
   id        String   @id @default(uuid())
-  content   String
   userId    String
+  content   String
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id])
 }

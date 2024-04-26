@@ -53,7 +53,7 @@ const HomePage: React.FC = () => {
       });
       console.log(response.data);
       // Redirect to MessagePage after submitting
-      navigate("../MessagePage/MessagePage");
+      navigate("/MessagePage/");
     } catch (error) {
       console.error("Error analyzing data:", error);
     }
@@ -70,7 +70,7 @@ const HomePage: React.FC = () => {
         <div className="title">SoundSoul</div>
         <div className="right-section">
           {/* Login button */}
-          {loggedIn || <Link to="/login">Login</Link>}
+          {loggedIn || <Link to="http://localhost:3000/login">Login</Link>}
           {/* User profile name */}
           {user && <div className="profile-name">{user.display_name}</div>}
         </div>
