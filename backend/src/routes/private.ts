@@ -5,8 +5,8 @@ import {
   Track,
   UserProfile,
 } from "@spotify/web-api-ts-sdk";
-import { FastifyPluginAsync} from "fastify";
-import { FastifyRequest } from 'fastify';
+import { FastifyPluginAsync } from "fastify";
+import { FastifyRequest } from "fastify";
 import { OPENAI_API_KEY, SPOTIFY_CLIENT_ID, jwt_secret } from "../env";
 import { prisma } from "../prisma";
 import { User } from "@prisma/client";
@@ -17,7 +17,6 @@ const openai = new OpenAI({
 });
 
 export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
-  // await server.register(fastifyJwt, { secret: jwt_secret });
   await server.register(fastifyAuth);
 
   server.decorate("spotifyApi", null);
@@ -65,11 +64,11 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     },
   ]);
 
-  await server.get("/me", { preHandler }, async (request, reply) => {
+  server.get("/me", { preHandler }, async (request, reply) => {
     return request.spotifyUser;
   });
 
-  await server.get("/playlists", { preHandler }, async (request, reply) => {
+  server.get("/playlists", { preHandler }, async (request, reply) => {
     const playlist = await request.spotifyApi.currentUser.playlists.playlists();
     return playlist;
   });
@@ -77,27 +76,32 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   interface EvaluateRequestBody {
     options: string[];
   }
-  
-  await server.post("/evaluate", { preHandler }, async (request, reply) => {
+
+  server.post("/evaluate", { preHandler }, async (request, reply) => {
     const { options } = request.body as EvaluateRequestBody;
 
     console.log("Selected options:", options);
     console.log("Selected :", options.join(", "));
     // Fetch relevant data based on user's selection
-    const [
-      playlists,
-      topArtists,
-      topTracks,
-      savedAlbums,
-      recentlyPlayed,
-    ] = await Promise.all([
-      options.includes("playlists") ? processPlaylists(request.spotifyApi) : null,
-      options.includes("topArtists") ? processTopArtists(request.spotifyApi) : null,
-      options.includes("topTracks") ? processTopTracks(request.spotifyApi) : null,
-      options.includes("savedAlbums") ? processSavedAlbums(request.spotifyApi) : null,
-      options.includes("recentlyPlayed") ? processRecentlyPlayed(request.spotifyApi) : null,
-      // Add similar checks for other data
-    ]);
+    const [playlists, topArtists, topTracks, savedAlbums, recentlyPlayed] =
+      await Promise.all([
+        options.includes("playlists")
+          ? processPlaylists(request.spotifyApi)
+          : null,
+        options.includes("topArtists")
+          ? processTopArtists(request.spotifyApi)
+          : null,
+        options.includes("topTracks")
+          ? processTopTracks(request.spotifyApi)
+          : null,
+        options.includes("savedAlbums")
+          ? processSavedAlbums(request.spotifyApi)
+          : null,
+        options.includes("recentlyPlayed")
+          ? processRecentlyPlayed(request.spotifyApi)
+          : null,
+        // Add similar checks for other data
+      ]);
     const info = {
       playlists,
       topArtists,
@@ -106,7 +110,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       recentlyPlayed,
       //currentlyPlaying,
       //currentQueue,
-   };
+    };
 
     let dataForAnalysis = [];
 
@@ -140,12 +144,14 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     }
 
     if (options.includes("recentlyPlayed")) {
-      const recentlyPlayedData = await processRecentlyPlayed(request.spotifyApi);
+      const recentlyPlayedData = await processRecentlyPlayed(
+        request.spotifyApi
+      );
       if (recentlyPlayedData) {
         dataForAnalysis.push(recentlyPlayedData);
       }
     }
-    
+
     const stream = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -196,14 +202,27 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       process.stdout.write(delta ?? "");
     }
     process.stdout.write("\n");
+    await prisma.historyEntry.create({
+      data: {
+        userId: request.prismaUser.id,
+        content: response,
+      },
+    });
     return response;
-
 
     // // Pass data to OpenAI API for analysis
     // const analysisResult = await analyzeData(dataForAnalysis, request.openAI);
 
     // // Return analysis result
     // return analysisResult;
+  });
+  server.get("/history", { preHandler }, async (request, reply) => {
+    const history = await prisma.historyEntry.findMany({
+      where: {
+        userId: request.prismaUser.id,
+      },
+    });
+    return history;
   });
 };
 
@@ -378,7 +397,7 @@ async function analyzeData(dataForAnalysis: any[], openAI: OpenAI) {
     // Call OpenAI API for chat completions
     const response = await openAI.completions.create({
       model: "text-davinci-003", // Use the appropriate model for text generation
-      prompt: messages.map(msg => `${msg.role}: ${msg.content}`).join('\n'),
+      prompt: messages.map((msg) => `${msg.role}: ${msg.content}`).join("\n"),
       max_tokens: 150, // Adjust max tokens as needed
       temperature: 0.7, // Adjust temperature as needed
       top_p: 1.0,
@@ -405,4 +424,3 @@ declare module "fastify" {
     openAI: OpenAI;
   }
 }
-
