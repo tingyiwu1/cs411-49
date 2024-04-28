@@ -58,21 +58,6 @@ const AssessmentPage: React.FC = () => {
 
   return (
     <>
-      {/* Header */}
-      <div className="header">
-        <div className="left-section">
-          {/* Logo */}
-          <img src={LogoImage} alt="Logo" className="logo" />
-        </div>
-        <div className="title">SoundSoul</div>
-        <div className="right-section">
-          {/* Login button */}
-          {loggedIn || <Link to="http://localhost:3000/login">Login</Link>}
-          {/* User profile name */}
-          {user && <div className="profile-name">{user.display_name}</div>}
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="content-container">
         <div className="home-container">

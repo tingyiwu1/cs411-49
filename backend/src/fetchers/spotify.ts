@@ -1,7 +1,7 @@
 import { SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
 import * as data from "../../../sample_data.json";
 
-const USE_LOCAL_DATA = false;
+const USE_LOCAL_DATA = true;
 
 export async function processPlaylists(spotifyApi: SpotifyApi) {
   try {

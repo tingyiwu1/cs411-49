@@ -5,6 +5,8 @@ import axios from "axios";
 import "./App.css";
 // import { HomePage } from "./components/HomePage/HomePage";
 import AssessmentPage from "./components/AssessmentPage/AssessmentPage";
+import logo from "./components/sound-waves.png";
+
 import {
   BrowserRouter,
   Link,
@@ -19,7 +21,7 @@ import ChoicesPage from "./components/ChoicesPage/ChoicesPage";
 import { HomePage } from "./components/HomePage/HomePage";
 import { AssessmentsListPage } from "./components/AssessmentsListPage/AssessmentsListPage";
 import { AssessmentResultsPage } from "./components/AssessmentResultsPage/AssessmentResultsPage";
-import { useEffect } from "react";
+import { useEffect, useState} from "react";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -28,52 +30,67 @@ function App() {
     axios.defaults.baseURL = "http://localhost:3000";
   }
   const { loggedIn, user, logOut } = useLogin();
+  const [dropdownVisible, setDropdownVisible] = useState(false);
 
-  // const navigate = useNavigate();
-
-  // useEffect(() => {
-  //   if (!loggedIn) {
-  //     navigate("/");
-  //   }
-  // }, [loggedIn, navigate]);
-  // useEffect(() => {
-  //   if (loggedIn) {
-  //     const getPlaylist = async () => {
-  //       const response = await axios.get("/evaluate");
-  //       console.log(response.data);
-  //     };
-  //     void getPlaylist();
-  //   }
-  // }, [loggedIn]);
   return (
     <>
       <BrowserRouter>
-        <div className="fixed left-0 top-0 h-20 w-full bg-red-300">
-          <div className="flex h-full flex-row items-center justify-between">
-            <div>logo</div>
-            <div className="flex flex-row items-center justify-end gap-2">
-              {user && (
-                <>
-                  <Link to="/">Home</Link>
-                  <Link to="/assess">Assess me</Link>
-                  <Link to="/assessments">Assessments</Link>
-                  <button onClick={logOut}>Log Out</button>
-                  <div>{user.display_name}</div>
-                </>
+        <div className="header">
+          <Link to="/" className="logo">
+                <img src={logo} alt="Logo" className="logo-img" />
+          </Link>
+          {/* <div className="left-section">
+            <Link to="/" className="logo">
+                <img src={logo} alt="Logo" className="logo-img" />
+            </Link>
+          </div> */}
+          <Link to="/" className="logo">
+            <div className="title">SoundSoul</div>
+          </Link>
+          {user && (
+            <div className="user-section">
+              <div className="analyze-link">
+                <Link to="/analyze">Analyze!</Link>
+              </div>
+              <div
+              className="dropdown cursor-pointer"
+              onMouseEnter={() => setDropdownVisible(true)}
+              onMouseLeave={() => setDropdownVisible(false)}
+            >
+              {user && <div>{user.display_name}</div>}
+              {/* Dropdown menu */}
+              {dropdownVisible && (
+                <div className="dropdown-menu">
+                  <Link
+                    to="/history"
+                    className="block px-4 py-2 text-gray-800 hover:bg-gray-200"
+                    onClick={() => setDropdownVisible(false)}
+                  >
+                    History
+                  </Link>
+                  <button
+                    onClick={logOut}
+                    className="block w-full px-4 py-2 text-left text-gray-800 hover:bg-gray-200"
+                  >
+                    Logout
+                  </button>
+                </div>
               )}
             </div>
-          </div>
+            </div>
+            )}
         </div>
+
         <div className="h-20" />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
-            path="/assess"
+            path="/analyze"
             element={loggedIn ? <AssessmentPage /> : <Navigate to={"/"} />}
           />
           <Route
-            path="/assessments"
+            path="/history"
             element={loggedIn ? <AssessmentsListPage /> : <Navigate to={"/"} />}
           />
           <Route
