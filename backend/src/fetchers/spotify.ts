@@ -1,7 +1,68 @@
-import { SpotifyApi, Track } from "@spotify/web-api-ts-sdk";
+import {
+  PlayHistory,
+  RecentlyPlayedTracksPage,
+  SpotifyApi,
+  Track,
+} from "@spotify/web-api-ts-sdk";
 import * as data from "../../../sample_data.json";
+import { DateTime } from "luxon";
 
 const USE_LOCAL_DATA = true;
+
+export async function playedInTimeframe(
+  spotifyApi: SpotifyApi,
+  after: DateTime<true>,
+  before: DateTime<true> = DateTime.now()
+) {
+  if (after > before) {
+    throw new Error("after date must be before before date");
+  }
+  try {
+    let playedInTimeframe: PlayHistory[] = [];
+    if (USE_LOCAL_DATA) {
+      const recentlyPlayed = data.recentlyPlayed as RecentlyPlayedTracksPage;
+      playedInTimeframe = recentlyPlayed.items.filter((item) => {
+        const playedAt = DateTime.fromISO(item.played_at);
+        return playedAt > after && playedAt < before;
+      });
+    } else {
+      // no idea if this actually works and I don't have data to test
+      let cursor = before;
+      while (cursor > after) {
+        const recentlyPlayed = await spotifyApi.player.getRecentlyPlayedTracks(
+          50,
+          {
+            timestamp: cursor.toMillis(),
+            type: "before",
+          }
+        );
+        if (!recentlyPlayed.items.length) {
+          break;
+        }
+        playedInTimeframe.push(
+          ...recentlyPlayed.items.filter(
+            (item) => DateTime.fromISO(item.played_at) < before
+          )
+        );
+        const newCursor = DateTime.fromMillis(
+          parseInt(recentlyPlayed.cursors.before)
+        );
+        if (!newCursor.isValid) break;
+        cursor = newCursor;
+      }
+    }
+    return playedInTimeframe.map((item) => {
+      return {
+        name: item.track.name,
+        artists: item.track.artists.map((artist) => artist.name),
+        album: item.track.album.name,
+      };
+    });
+  } catch (e) {
+    console.log(e);
+    return null;
+  }
+}
 
 export async function processPlaylists(spotifyApi: SpotifyApi) {
   try {

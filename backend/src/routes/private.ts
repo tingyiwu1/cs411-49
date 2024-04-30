@@ -7,7 +7,7 @@ import {
 } from "@spotify/web-api-ts-sdk";
 import { FastifyPluginAsync } from "fastify";
 import { FastifyRequest } from "fastify";
-import { OPENAI_API_KEY, SPOTIFY_CLIENT_ID, jwt_secret } from "../env";
+import { OPENAI_API_KEY, SPOTIFY_CLIENT_ID, GENIUS_ACCESS_TOKEN } from "../env";
 import { prisma } from "../prisma";
 import { Assessment, User } from "@prisma/client";
 import OpenAI from "openai";
@@ -22,16 +22,24 @@ import {
   AssessmentPersonality,
 } from "../types";
 import {
+  playedInTimeframe,
   processPlaylists,
   processRecentlyPlayed,
   processSavedAlbums,
   processTopArtists,
   processTopTracks,
 } from "../fetchers/spotify";
+import { DateTime } from "luxon";
+import * as Genius from "genius-lyrics";
+import { getSongLyrics } from "../fetchers/genius";
+import { shuffle } from "../util";
+import { getCompletion } from "../fetchers/openai";
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
+
+const genius = new Genius.Client(GENIUS_ACCESS_TOKEN);
 
 export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   // await server.register(fastifyJwt, { secret: jwt_secret });
@@ -41,7 +49,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   server.decorate("spotifyApi", null);
   server.decorate("spotifyUser", null);
   server.decorate("prismaUser", null);
-  server.decorate("openAI", openai);
 
   const preHandler = server.auth([
     async (request, reply) => {
@@ -169,7 +176,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     const messages: ChatCompletionMessageParam[] = [
       {
         role: "system",
-        content: `Asssigned to determine a user's personaliy based on their music traits, which is from the user's spotify profile. \
+        content: `Assigned to determine a user's personaliy based on their music traits, which is from the user's spotify profile. \
           In order to accomplish this, the user has selected what it is that they want analyed: ${options}. \
           For each of the selected options, reference the corresponding user data and create an analysis based on the user's personality based on that category. \
           Do not analyze the individual items in each category, but rather what the data as a whole says about the user's personality. Each analysis should be in paragraph form. \
@@ -335,6 +342,116 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     };
   });
 
+  server.get("/recent", { preHandler }, async (request, reply) => {
+    const d = DateTime.now().minus({ days: 7 });
+    const tracks = playedInTimeframe(request.spotifyApi, d);
+    return tracks;
+  });
+
+  server.post<{
+    Body: {
+      start: string;
+    };
+  }>("/mood", { preHandler }, async (request, reply) => {
+    const { start } = request.body;
+    const d = DateTime.fromISO(start);
+    if (!d.isValid) return reply.code(400).send({ error: "Invalid date" });
+
+    const tracks =
+      (await playedInTimeframe(
+        request.spotifyApi,
+        d.startOf("week"),
+        d.endOf("week")
+      )) ?? [];
+
+    shuffle(tracks);
+
+    const lyrics = await Promise.all(
+      tracks.map(async (track) => {
+        const lyric = await getSongLyrics(genius, track.name, track.artists);
+        return lyric;
+      })
+    );
+
+    const tracksWithLyrics = tracks.map((track, i) => ({
+      ...track,
+      lyrics: lyrics[i],
+    }));
+
+    const messages: ChatCompletionMessageParam[] = [
+      {
+        role: "system",
+        content: `Assigned to generate a blurb about the user's mood based on the music they've been listening to in the last week. \
+        Base your analysis on their overall personality as described below. Do not make any assessment of their overall taste in music, but rather focus on \
+        how the music they've been listening recently reflects their mood. Find and quote specific lines from the lyrics provided to support your analysis. \
+        If the quote is not in English, include a translation in parentheses. Indicate the song that the quote is from. Cite at least 3 songs.
+       
+        User's personality:
+        ${JSON.stringify(request.prismaUser.selectedAssessment)}
+        `,
+      },
+      {
+        role: "user",
+        content: `Recently listened tracks: 
+        ${JSON.stringify(tracksWithLyrics)}`,
+      },
+    ];
+
+    const mood = await getCompletion(openai, messages);
+
+    messages.push({
+      role: "system",
+      content: `
+      Generate a JSON array of the songs mentioned in the blurb. Each entry should be a string with the name of the song exactly as specified \
+      in the user's playlist. Make sure every single song mentioned is in the array. Do not include any other songs in the user's playlist that \
+      are not mentioned in the blurb. The array should only contain the names of songs that are in the generate blurb. Do not output anything else. \
+      Do not wrap wrap the output in a code block.
+      `,
+    });
+
+    const mentionedSongsResponse = await getCompletion(openai, messages);
+
+    const mentionedSongs = JSON.parse(
+      mentionedSongsResponse.content ?? "[]"
+    ) as string[];
+
+    console.log("mentionedSongs", mentionedSongs);
+
+    messages[1].content = `Recently listened tracks: ${JSON.stringify(
+      tracksWithLyrics.filter((t) => mentionedSongs.includes(t.name))
+    )}`;
+
+    messages.push({
+      role: "system",
+      content: `
+      For each song mentioned in the blurb, find a quote from its lyrics that best supports the mood described in the blurb. \
+      If the blurb includes a quote for the song, include the quote from the blurb instead of finding a new one. \
+      Only consider the songs that are mentioned in the blurb. Make sure every song mentioned in the blurb is \
+      included as a key. Do not include any other songs. Ignore all other songs on the user's \
+      playlist that were not mentioned in the blurb. \
+
+      Respond with a JSON object where the key is the song name and the value is the quote. Do not output anything else. \
+      Do not wrap wrap the output in a code block.
+      `,
+    });
+
+    const quotes = await getCompletion(openai, messages);
+
+    messages.push({
+      role: "system",
+      content: `
+      Based on your understanding of the user's mood, generate a summary that describes the vibe \
+      of the user's mood. Use concise and descriptive language, and avoid using complete sentences. Weave the quotes \
+      into the summary in a way that makes sense. Do not use the quotes as citations to justify your description, but rather \
+      as self-standing parts of the description itself. Do not explain what each quote entails.
+      `,
+    });
+
+    const summary = await getCompletion(openai, messages);
+
+    return summary;
+  });
+
   server.get("/assessments", { preHandler }, async (request, reply) => {
     const assessments = await prisma.assessment.findMany({
       where: {
@@ -420,6 +537,5 @@ declare module "fastify" {
     prismaUser: User & {
       selectedAssessment: Assessment | null;
     };
-    openAI: OpenAI;
   }
 }

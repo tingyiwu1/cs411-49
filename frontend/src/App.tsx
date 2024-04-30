@@ -13,7 +13,6 @@ import {
   Navigate,
   Route,
   Routes,
-  useNavigate,
 } from "react-router-dom";
 import LoginPage from "./components/LoginPage/LoginPage";
 import { useLogin } from "./hooks";
@@ -32,6 +31,24 @@ function App() {
   const { loggedIn, user, logOut } = useLogin();
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
+  // const navigate = useNavigate();
+
+  // useEffect(() => {
+  //   if (!loggedIn) {
+  //     navigate("/");
+  //   }
+  // }, [loggedIn, navigate]);
+  useEffect(() => {
+    if (loggedIn) {
+      const getPlaylist = async () => {
+        const response = await axios.post("/mood", {
+          start: "2024-04-24",
+        });
+        console.log(response.data);
+      };
+      void getPlaylist();
+    }
+  }, [loggedIn]);
   return (
     <>
       <BrowserRouter>

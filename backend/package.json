@@ -24,10 +24,13 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.1",
     "fastify": "^4.26.2",
+    "genius-lyrics": "^4.4.7",
+    "luxon": "^3.4.4",
     "openai": "^4.29.2",
     "request": "^2.88.2"
   },
   "devDependencies": {
+    "@types/luxon": "^3.4.2",
     "@types/node": "^20.11.30",
     "prisma": "^5.12.1",
     "ts-node": "^10.9.2",
