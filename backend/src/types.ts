@@ -20,3 +20,9 @@ export type AssessmentContent = {
   personality: AssessmentPersonality["personality"];
   mbtiTraits: AssessmentMBTI[];
 };
+
+export type Assessment = AssessmentContent & {
+  id: string;
+  createdAt: string;
+  selected: boolean;
+};

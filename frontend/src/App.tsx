@@ -15,6 +15,7 @@ import { ProfilePage } from "./components/ProfilePage/ProfilePage";
 import { AssessmentResultsPage } from "./components/AssessmentResultsPage/AssessmentResultsPage";
 import { useCallback, useEffect, useState } from "react";
 import { NavBar } from "./components/NavBar";
+import { MoodPage } from "./components/MoodPage/MoodPage";
 
 function App() {
   if (process.env.NODE_ENV === "development") {
@@ -23,23 +24,24 @@ function App() {
     axios.defaults.baseURL = "http://localhost:3000";
   }
   const [user, setUser] = useState<UserData | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
 
-  const [loading, setLoading] = useState(true);
+  const refetchUser = useCallback(async () => {
+    setUserLoading(true);
+    const response = await axios.get("/me");
+    setUser(response.data);
+    setUserLoading(false);
+  }, []);
 
   useEffect(() => {
     const jwt = localStorage.getItem("jwt");
     if (jwt) {
       axios.defaults.headers.common["Authorization"] = jwt;
-      const getUser = async () => {
-        const response = await axios.get("/me");
-        setUser(response.data);
-        setLoading(false);
-      };
-      void getUser();
+      void refetchUser();
     } else {
-      setLoading(false);
+      setUserLoading(false);
     }
-  }, []);
+  }, [refetchUser]);
 
   const logOut = useCallback(() => {
     localStorage.removeItem("jwt");
@@ -51,10 +53,11 @@ function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && user == null) {
+    if (!userLoading && user == null) {
       navigate("/");
     }
-  }, [user, loading, navigate]);
+  }, [user, userLoading, navigate]);
+
   // useEffect(() => {
   //   if (loggedIn) {
   //     const getPlaylist = async () => {
@@ -69,10 +72,11 @@ function App() {
   return (
     <LoginContext.Provider
       value={{
-        loading,
+        loading: userLoading,
         loggedIn: user !== null,
         logOut,
         user,
+        refetchUser,
       }}
     >
       <div className="min-h-screen bg-[#F4F0E3]">
@@ -125,10 +129,11 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={user == null ? <HomePage /> : <Navigate to={"/analyze"} />}
+            element={user == null ? <HomePage /> : <Navigate to={"/mood"} />}
           />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/analyze" element={<AssessmentPage />} />
+          <Route path="mood" element={<MoodPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/assessments/:id" element={<AssessmentResultsPage />} />
         </Routes>

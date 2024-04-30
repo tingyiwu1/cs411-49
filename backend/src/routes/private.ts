@@ -89,7 +89,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
           },
         });
         let selectedAssessment = null;
-        if (selectedAssessments.length > 1) {
+        if (selectedAssessments.length > 0) {
           const [first, ...rest] = selectedAssessments;
           if (rest) {
             await prisma.assessment.updateMany({
@@ -118,9 +118,19 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   ]);
 
   server.get("/me", { preHandler }, async (request, reply) => {
+    const selectedAssessment = request.prismaUser.selectedAssessment
+      ? {
+          id: request.prismaUser.selectedAssessment.id,
+          createdAt:
+            request.prismaUser.selectedAssessment.createdAt.toISOString(),
+          selected: request.prismaUser.selectedAssessment.selected,
+          ...JSON.parse(request.prismaUser.selectedAssessment.content),
+        }
+      : null;
     return {
       ...request.spotifyUser,
       created_at: request.prismaUser.createdAt.toISOString(),
+      selectedAssessment,
     };
   });
 
@@ -356,7 +366,12 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       start: string;
     };
   }>("/mood", { preHandler }, async (request, reply) => {
+    // return `Reflective and complex emotions swirl with a mix of contemplation and empathy. <span data-song="Earth, Wind & Fire">왜 넌 갈팡질팡 날 헛갈려 해</span> captures the confusion and desire for clarity, while <span data-song="A Mirage">Coming to find I need to pick up my slack, Realize I can't go back</span> depicts a self-awareness and determination to improve and move ahead. Compassion threads through, with <span data-song="Make Up (Feat. Crush)">Baby, babe, hate to see you cry</span> emphasizing concern and longing for resolution.`;
     const { start } = request.body;
+    console.log(request.prismaUser);
+    if (!request.prismaUser.selectedAssessment) {
+      return { error: "NO_SELECTED_ASSESSMENT" };
+    }
     const d = DateTime.fromISO(start);
     if (!d.isValid) return reply.code(400).send({ error: "Invalid date" });
 
@@ -388,14 +403,14 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
         Base your analysis on their overall personality as described below. Do not make any assessment of their overall taste in music, but rather focus on \
         how the music they've been listening recently reflects their mood. Find and quote specific lines from the lyrics provided to support your analysis. \
         If the quote is not in English, include a translation in parentheses. Indicate the song that the quote is from. Cite at least 3 songs.
-       
+
         User's personality:
         ${JSON.stringify(request.prismaUser.selectedAssessment)}
         `,
       },
       {
         role: "user",
-        content: `Recently listened tracks: 
+        content: `Recently listened tracks:
         ${JSON.stringify(tracksWithLyrics)}`,
       },
     ];
@@ -450,14 +465,14 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       into the summary in a way that makes sense. Do not use the quotes as citations to justify your description, but rather \
       as self-standing parts of the description itself. Do not explain what each quote entails.\
 
-      Output the summary wrapped in a <div> tag. Wrap all quotes in <span> tags with the song title in the data-song attribute.
+      In your summary, wrap all quotes in <span> tags with the song title in the data-song attribute.
       e.g. <span data-song="song title">quote</span>
       `,
     });
 
     const summary = await getCompletion(openai, messages, "gpt-4-turbo");
 
-    return summary;
+    return summary.content;
   });
 
   server.get("/assessments", { preHandler }, async (request, reply) => {
@@ -485,20 +500,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     });
     if (!assessment) {
       reply.code(404).send({ error: "Assessment not found" });
-    } else {
-      return {
-        id: assessment.id,
-        createdAt: assessment.createdAt.toISOString(),
-        selected: assessment.selected,
-        ...JSON.parse(assessment.content),
-      };
-    }
-  });
-
-  server.get("/selected_assessment", { preHandler }, async (request, reply) => {
-    const assessment = request.prismaUser.selectedAssessment;
-    if (!assessment) {
-      return null;
     } else {
       return {
         id: assessment.id,
