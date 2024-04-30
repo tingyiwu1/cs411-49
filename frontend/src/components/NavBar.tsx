@@ -29,9 +29,10 @@ export const NavBar: React.FC = () => {
             {location.pathname !== "/" && (
               <Link
                 to="/profile"
-                className="mr-3 flex w-52 flex-row items-center justify-between rounded-full bg-[#F1D999] py-2 pl-3 pr-2 drop-shadow"
+                className="mr-3 flex flex-row items-center justify-between gap-2 rounded-full bg-[#F1D999] py-2 pl-3 pr-2 drop-shadow"
               >
                 <div>{user?.display_name}</div>
+                <div className="text-sm">{user?.selectedAssessment?.title}</div>
                 <div>
                   {pfp ? (
                     <img src={pfp} alt="Profile" className="h-10" />

@@ -20,6 +20,7 @@ import {
   AssessmentContent,
   AssessmentMBTI,
   AssessmentPersonality,
+  StreamEvent,
 } from "../types";
 import {
   playedInTimeframe,
@@ -34,6 +35,7 @@ import * as Genius from "genius-lyrics";
 import { getSongLyrics } from "../fetchers/genius";
 import { shuffle } from "../util";
 import { getCompletion } from "../fetchers/openai";
+import { Readable, Transform } from "stream";
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -217,67 +219,75 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       },
     ];
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages,
-      stream: true,
-    });
-    const response: ChatCompletionMessage = {
-      role: "assistant",
-      content: "",
-    };
-    for await (const message of stream) {
-      const delta = message.choices[0]?.delta.content ?? "";
-      response.content += delta;
-      process.stdout.write(delta);
-    }
-    process.stdout.write("\n");
+    const categoriesResponse = await getCompletion(openai, messages);
+
+    // const stream = await openai.chat.completions.create({
+    //   model: "gpt-3.5-turbo",
+    //   messages,
+    //   stream: true,
+    // });
+    // const response: ChatCompletionMessage = {
+    //   role: "assistant",
+    //   content: "",
+    // };
+    // for await (const message of stream) {
+    //   const delta = message.choices[0]?.delta.content ?? "";
+    //   response.content += delta;
+    //   process.stdout.write(delta);
+    // }
+    // process.stdout.write("\n");
 
     const categories = JSON.parse(
-      response.content ?? "{}"
+      categoriesResponse.content ?? "{}"
     ) as AssessmentCategories;
-
-    messages.push(response);
 
     messages.push({
       role: "system",
       content: `
       Based on this analysis, generate a holistic account of the kind of person the user is. In order to accomplish this, \
       you could potentially do the following: dive into lyrics, mood, and themes to deciper their potential personality \
-      traits based on what they requested to be analyzed.
+      traits based on what they requested to be analyzed. Address the user directly in the tone of a personality quiz assessment. \
+      Additionally, come up title that succinctly summarizes the kind of person the user is.
       
-      Respond with a JSON object where the key is the "personality" and the value is the analysis. Do not output anything else.
+      Respond with a JSON object in the following format:
+      {
+        "personality": {analysis string},
+        "title": {title string}
+      }
+      Do not output anything else.
       `,
     });
 
-    const stream2 = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages,
-      stream: true,
-    });
+    const personalityResponse = await getCompletion(openai, messages);
 
-    const response2: ChatCompletionMessage = {
-      role: "assistant",
-      content: "",
-    };
+    // const stream2 = await openai.chat.completions.create({
+    //   model: "gpt-3.5-turbo",
+    //   messages,
+    //   stream: true,
+    // });
 
-    for await (const message of stream2) {
-      const delta = message.choices[0]?.delta.content ?? "";
-      response2.content += delta;
-      process.stdout.write(delta);
-    }
+    // const response2: ChatCompletionMessage = {
+    //   role: "assistant",
+    //   content: "",
+    // };
+
+    // for await (const message of stream2) {
+    //   const delta = message.choices[0]?.delta.content ?? "";
+    //   response2.content += delta;
+    //   process.stdout.write(delta);
+    // }
 
     const personality = JSON.parse(
-      response2.content ?? "{}"
+      personalityResponse.content ?? "{}"
     ) as AssessmentPersonality;
 
-    messages.push(response2);
+    // messages.push(response2);
 
     messages.push({
       role: "system",
       content: `
       Based on this analysis, determine the top 3 most likely MBTI traits of the user. Provide an explanation for each of the \
-      traits based on the analysis you have done. 
+      traits based on the analysis you have done. Address the user directly in the tone of a personality quiz assessment. \
       
       There are 16 MBTI results and answers to choose from:
         ISTJ - Introverted, Sensing, Thinking, Judging
@@ -304,27 +314,29 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       `,
     });
 
-    const stream3 = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages,
-      stream: true,
-    });
+    const mbtiTraitsResponse = await getCompletion(openai, messages);
 
-    const response3: ChatCompletionMessage = {
-      role: "assistant",
-      content: "",
-    };
+    // const stream3 = await openai.chat.completions.create({
+    //   model: "gpt-3.5-turbo",
+    //   messages,
+    //   stream: true,
+    // });
 
-    for await (const message of stream3) {
-      const delta = message.choices[0]?.delta.content ?? "";
-      response3.content += delta;
-      process.stdout.write(delta);
-    }
+    // const response3: ChatCompletionMessage = {
+    //   role: "assistant",
+    //   content: "",
+    // };
 
-    process.stdout.write("\n");
+    // for await (const message of stream3) {
+    //   const delta = message.choices[0]?.delta.content ?? "";
+    //   response3.content += delta;
+    //   process.stdout.write(delta);
+    // }
+
+    // process.stdout.write("\n");
 
     const mbtiTraits = JSON.parse(
-      response3.content ?? "[]"
+      mbtiTraitsResponse.content ?? "[]"
     ) as AssessmentMBTI[];
 
     // await prisma.historyEntry.create({
@@ -336,6 +348,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     const assessmentContent: AssessmentContent = {
       categories,
       personality: personality.personality,
+      title: personality.title,
       mbtiTraits,
     };
 
@@ -365,41 +378,53 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     Body: {
       start: string;
     };
+    // Reply: ReadableStream<StreamEvent<string>>;
   }>("/mood", { preHandler }, async (request, reply) => {
     // return `Reflective and complex emotions swirl with a mix of contemplation and empathy. <span data-song="Earth, Wind & Fire">왜 넌 갈팡질팡 날 헛갈려 해</span> captures the confusion and desire for clarity, while <span data-song="A Mirage">Coming to find I need to pick up my slack, Realize I can't go back</span> depicts a self-awareness and determination to improve and move ahead. Compassion threads through, with <span data-song="Make Up (Feat. Crush)">Baby, babe, hate to see you cry</span> emphasizing concern and longing for resolution.`;
-    const { start } = request.body;
-    console.log(request.prismaUser);
-    if (!request.prismaUser.selectedAssessment) {
-      return { error: "NO_SELECTED_ASSESSMENT" };
-    }
-    const d = DateTime.fromISO(start);
-    if (!d.isValid) return reply.code(400).send({ error: "Invalid date" });
 
-    const tracks =
-      (await playedInTimeframe(
-        request.spotifyApi,
-        d.startOf("week"),
-        d.endOf("week")
-      )) ?? [];
+    async function* stream(): AsyncGenerator<StreamEvent<string>> {
+      const { start } = request.body;
 
-    shuffle(tracks);
+      if (!request.prismaUser.selectedAssessment) {
+        console.log("No assessment selected");
+        yield { type: "error", message: "No assessment selected" };
+        return;
+      }
+      const d = DateTime.fromISO(start);
+      if (!d.isValid) {
+        console.log("Invalid date");
+        yield { type: "error", message: "Invalid date" };
+        return;
+      }
+      yield { type: "progress", message: "Fetching recently played tracks..." };
 
-    const lyrics = await Promise.all(
-      tracks.map(async (track) => {
-        const lyric = await getSongLyrics(genius, track.name, track.artists);
-        return lyric;
-      })
-    );
+      const tracks =
+        (await playedInTimeframe(
+          request.spotifyApi,
+          d.startOf("week"),
+          d.endOf("week")
+        )) ?? [];
 
-    const tracksWithLyrics = tracks.map((track, i) => ({
-      ...track,
-      lyrics: lyrics[i],
-    }));
+      shuffle(tracks);
 
-    const messages: ChatCompletionMessageParam[] = [
-      {
-        role: "system",
-        content: `Assigned to generate a blurb about the user's mood based on the music they've been listening to in the last week. \
+      yield { type: "progress", message: "Fetching lyrics..." };
+
+      const lyrics = await Promise.all(
+        tracks.map(async (track) => {
+          const lyric = await getSongLyrics(genius, track.name, track.artists);
+          return lyric;
+        })
+      );
+
+      const tracksWithLyrics = tracks.map((track, i) => ({
+        ...track,
+        lyrics: lyrics[i],
+      }));
+
+      const messages: ChatCompletionMessageParam[] = [
+        {
+          role: "system",
+          content: `Assigned to generate a blurb about the user's mood based on the music they've been listening to in the last week. \
         Base your analysis on their overall personality as described below. Do not make any assessment of their overall taste in music, but rather focus on \
         how the music they've been listening recently reflects their mood. Find and quote specific lines from the lyrics provided to support your analysis. \
         If the quote is not in English, include a translation in parentheses. Indicate the song that the quote is from. Cite at least 3 songs.
@@ -407,43 +432,45 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
         User's personality:
         ${JSON.stringify(request.prismaUser.selectedAssessment)}
         `,
-      },
-      {
-        role: "user",
-        content: `Recently listened tracks:
+        },
+        {
+          role: "user",
+          content: `Recently listened tracks:
         ${JSON.stringify(tracksWithLyrics)}`,
-      },
-    ];
+        },
+      ];
 
-    const mood = await getCompletion(openai, messages, "gpt-3.5-turbo");
+      yield { type: "progress", message: "Analyzing mood..." };
 
-    messages.push({
-      role: "system",
-      content: `
+      const mood = await getCompletion(openai, messages, "gpt-3.5-turbo");
+
+      messages.push({
+        role: "system",
+        content: `
       Generate a JSON array of the songs mentioned in the blurb. Each entry should be a string with the name of the song exactly as specified \
       in the user's playlist. Make sure every single song mentioned is in the array. Do not include any other songs in the user's playlist that \
       are not mentioned in the blurb. The array should only contain the names of songs that are in the generate blurb. Do not output anything else. \
       Do not wrap wrap the output in a code block.
       `,
-    });
+      });
 
-    const mentionedSongsResponse = await getCompletion(
-      openai,
-      messages,
-      "gpt-4-turbo"
-    );
+      const mentionedSongsResponse = await getCompletion(
+        openai,
+        messages,
+        "gpt-4-turbo"
+      );
 
-    const mentionedSongs = JSON.parse(
-      mentionedSongsResponse.content ?? "[]"
-    ) as string[];
+      const mentionedSongs = JSON.parse(
+        mentionedSongsResponse.content ?? "[]"
+      ) as string[];
 
-    messages[1].content = `Recently listened tracks: ${JSON.stringify(
-      tracksWithLyrics.filter((t) => mentionedSongs.includes(t.name))
-    )}`;
+      messages[1].content = `Recently listened tracks: ${JSON.stringify(
+        tracksWithLyrics.filter((t) => mentionedSongs.includes(t.name))
+      )}`;
 
-    messages.push({
-      role: "system",
-      content: `
+      messages.push({
+        role: "system",
+        content: `
       For each song mentioned in the blurb, find a quote from its lyrics that best supports the mood described in the blurb. \
       If the blurb includes a quote for the song, include the quote from the blurb instead of finding a new one. \
       Only consider the songs that are mentioned in the blurb. Make sure every song mentioned in the blurb is \
@@ -453,13 +480,15 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       Respond with a JSON object where the key is the song name and the value is the quote. Do not output anything else. \
       Do not wrap wrap the output in a code block.
       `,
-    });
+      });
 
-    const quotes = await getCompletion(openai, messages, "gpt-3.5-turbo");
+      yield { type: "progress", message: "Finding quotes..." };
 
-    messages.push({
-      role: "system",
-      content: `
+      const quotes = await getCompletion(openai, messages, "gpt-3.5-turbo");
+
+      messages.push({
+        role: "system",
+        content: `
       Based on your understanding of the user's mood, generate a summary that describes the vibe \
       of the user's mood. Use concise and descriptive language, and avoid using complete sentences. Weave the quotes \
       into the summary in a way that makes sense. Do not use the quotes as citations to justify your description, but rather \
@@ -468,17 +497,38 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       In your summary, wrap all quotes in <span> tags with the song title in the data-song attribute.
       e.g. <span data-song="song title">quote</span>
       `,
-    });
+      });
 
-    const summary = await getCompletion(openai, messages, "gpt-4-turbo");
+      yield { type: "progress", message: "Generating summary..." };
 
-    return summary.content;
+      const summary = await getCompletion(openai, messages, "gpt-4-turbo");
+
+      yield {
+        type: "result",
+        result: summary.content ?? "",
+      };
+      return;
+    }
+
+    const JSONStream = Readable.from(stream(), { objectMode: true }).pipe(
+      new Transform({
+        objectMode: true,
+        transform(chunk, encoding, callback) {
+          callback(null, JSON.stringify(chunk));
+        },
+      })
+    );
+
+    return reply.send(JSONStream);
   });
 
   server.get("/assessments", { preHandler }, async (request, reply) => {
     const assessments = await prisma.assessment.findMany({
       where: {
         userId: request.prismaUser.id,
+      },
+      orderBy: {
+        createdAt: "desc",
       },
     });
     return assessments.map((a) => ({
@@ -522,16 +572,33 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
           id: assessmentId,
         },
       });
-      if (!assessment) {
-        reply.code(404).send({ error: "Assessment not found" });
-      } else {
-        return {
-          id: assessment.id,
-          createdAt: assessment.createdAt.toISOString(),
-          selected: assessment.selected,
-          ...JSON.parse(assessment.content),
-        };
+      if (!assessment)
+        return reply.code(404).send({ error: "Assessment not found" });
+
+      if (request.prismaUser.selectedAssessment) {
+        await prisma.assessment.update({
+          where: {
+            id: request.prismaUser.selectedAssessment.id,
+          },
+          data: {
+            selected: false,
+          },
+        });
       }
+      await prisma.assessment.update({
+        where: {
+          id: assessmentId,
+        },
+        data: {
+          selected: true,
+        },
+      });
+      return {
+        id: assessment.id,
+        createdAt: assessment.createdAt.toISOString(),
+        selected: assessment.selected,
+        ...JSON.parse(assessment.content),
+      };
     } catch (error) {
       console.error("Error selecting assessment:", error);
       reply.code(500).send({ error: "Internal Server Error" });

@@ -5,15 +5,27 @@ import { Link } from "react-router-dom";
 import { LoginContext } from "../../utils";
 
 export const ProfilePage: React.FC = () => {
-  const { user, logOut } = useContext(LoginContext);
+  const { user, logOut, refetchUser } = useContext(LoginContext);
 
   const [assessments, setAssessments] = useState<Assessment[]>([]);
 
   useEffect(() => {
-    axios.get<Assessment[]>("/assessments").then((response) => {
-      setAssessments(response.data);
-    });
+    void fetchAssessments();
   }, []);
+
+  const fetchAssessments = async () => {
+    const response = await axios.get<Assessment[]>("/assessments");
+    setAssessments(response.data);
+  };
+
+  const handleSelectAssessment = async (assessment: Assessment) => {
+    if (assessment.selected) return;
+    await axios.post<Assessment>("/select_assessment", {
+      assessmentId: assessment.id,
+    });
+    void fetchAssessments();
+    void refetchUser();
+  };
 
   const pfp = user?.images[0]?.url || "";
 
@@ -25,22 +37,52 @@ export const ProfilePage: React.FC = () => {
     : undefined;
 
   return (
-    <div className="bg-gradient-to-r from-[#FDF7EA] via-[#FAEDCC] via-[75%] to-[#F2DDA4]">
+    <div className="min-h-screen bg-gradient-to-r from-[#FDF7EA] via-[#FAEDCC] via-[75%] to-[#F2DDA4]">
       <div className="grid flex-shrink grid-cols-2">
-        <div className="inline-block overflow-auto ">
-          <h1>Assessments</h1>
-          {assessments.map((assessment) => (
-            <div key={assessment.id}>
-              <h2>{assessment.id}</h2>
-              <Link to={`/assessments/${assessment.id}`}>View</Link>
-              <p>
-                {assessment.mbtiTraits.map((t, i) => (
-                  <span key={`${assessment.id}-${i}`}>{t.trait} </span>
-                ))}
-              </p>
-              <p>{assessment.personality}</p>
+        <div className="inline-block overflow-auto">
+          <div className="flex flex-col items-center gap-3 px-5">
+            <div className="mt-5 self-stretch rounded-md border-2 border-[#4A3434] bg-[#F1D999] py-2 text-center text-xl">
+              Personality Archive
             </div>
-          ))}
+            <Link
+              to="/analyze"
+              className="mt-2 self-stretch rounded-md border-2 border-[#4A3434] bg-[#DCEEC5] py-2 text-center text-xl"
+            >
+              +
+            </Link>
+            {assessments.map((assessment) => (
+              <div
+                className="flex-col rounded-lg bg-gradient-to-t from-[#E1ECD3] to-[#BFDD99] px-5 py-2"
+                key={assessment.id}
+              >
+                <div className="flex flex-row items-center justify-between">
+                  <div className="flex flex-row items-center justify-start gap-3">
+                    <div
+                      onClick={() => handleSelectAssessment(assessment)}
+                      className={`h-5 w-5 flex-shrink-0 rounded-full border-2 border-[#4A3434] ${assessment.selected ? "cursor-default bg-[#755B5B]" : "cursor-pointer bg-[#F4F0E3]"}`}
+                    />
+                    <Link
+                      className="text-2xl text-[#4A3434]"
+                      to={`/assessments/${assessment.id}`}
+                    >
+                      {assessment.title}
+                    </Link>
+                  </div>
+                  <div className="text-md text-[#755B5B]">
+                    {new Date(assessment.createdAt).toLocaleString("default")}
+                  </div>
+                </div>
+                <p className="text-md ml-8 text-[#755B5B]">
+                  {assessment.mbtiTraits.map((t, i) => (
+                    <span key={`${assessment.id}-${i}`}>{t.trait} </span>
+                  ))}
+                </p>
+                <p className="ml-8 overflow-ellipsis text-sm text-[#4A3434]">
+                  {assessment.personality}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="" />
       </div>

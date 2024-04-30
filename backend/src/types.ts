@@ -8,6 +8,7 @@ export type AssessmentCategories = {
 
 export type AssessmentPersonality = {
   personality: string;
+  title: string;
 };
 
 export type AssessmentMBTI = {
@@ -18,6 +19,7 @@ export type AssessmentMBTI = {
 export type AssessmentContent = {
   categories: AssessmentCategories;
   personality: AssessmentPersonality["personality"];
+  title: AssessmentPersonality["title"];
   mbtiTraits: AssessmentMBTI[];
 };
 
@@ -26,3 +28,13 @@ export type Assessment = AssessmentContent & {
   createdAt: string;
   selected: boolean;
 };
+
+export type StreamEvent<T> =
+  | {
+      type: "progress" | "error";
+      message: string;
+    }
+  | {
+      type: "result";
+      result: T;
+    };

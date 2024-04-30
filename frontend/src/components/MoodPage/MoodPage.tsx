@@ -2,17 +2,14 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import { LoginContext } from "../../utils";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-
-type MoodResponse =
-  | string
-  | {
-      error: "NO_SELECTED_ASSESSMENT";
-    };
+import { StreamEvent } from "../../types";
 
 export const MoodPage: React.FC = () => {
   const { user, loading } = useContext(LoginContext);
 
   const [mood, setMood] = useState<string | null>(null);
+
+  const [statusMessage, setStatusMessage] = useState<string>("Loading...");
 
   const navigate = useNavigate();
 
@@ -23,16 +20,53 @@ export const MoodPage: React.FC = () => {
       navigate("/analyze");
     }
 
-    axios
-      .post<MoodResponse>("/mood", { start: "2024-04-24" })
-      .then((response) => {
-        console.log(response);
-        if (typeof response.data === "string") {
-          setMood(response.data);
-        } else {
-          navigate("/analyze");
+    const streamMood = async () => {
+      async function* stream(): AsyncGenerator<StreamEvent<string>> {
+        setMood(null);
+        setStatusMessage("Loading...");
+        const response = await fetch("http://localhost:3000/mood", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              axios.defaults.headers.common["Authorization"]?.toString() ?? "",
+          },
+          body: JSON.stringify({ start: "2024-04-24" }),
+        });
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        if (!reader) {
+          setStatusMessage("Error fetching mood data");
+          return;
         }
-      });
+        let buffer = "";
+        let done, value;
+        while (!done) {
+          ({ done, value } = await reader.read());
+          const text = decoder.decode(value);
+          buffer += text;
+          const nextSplit = buffer.indexOf("}{");
+          if (nextSplit != -1) {
+            const first = buffer.slice(0, nextSplit + 1);
+            buffer = buffer.slice(nextSplit + 1);
+            yield JSON.parse(first) as StreamEvent<string>;
+          }
+        }
+        yield JSON.parse(buffer) as StreamEvent<string>;
+        return;
+      }
+
+      for await (const data of stream()) {
+        if (data.type == "progress") {
+          setStatusMessage(data.message);
+        } else if (data.type == "result") {
+          setMood(data.result);
+        } else {
+          setStatusMessage("Error fetching mood data");
+        }
+      }
+    };
+    void streamMood();
   }, [user, loading, navigate]);
 
   const matches = useMemo(() => {
@@ -84,7 +118,7 @@ export const MoodPage: React.FC = () => {
       </div>
       <div className="mx-20 mt-5 rounded-xl bg-gradient-to-t from-[#DCEEC5] to-[#C5E5A5] p-3 text-lg text-[#755B5B]">
         <div className="text-center text-2xl font-bold">This Week's Mood</div>
-        {mood == null ? <div>loading...</div> : <div>{matches}</div>}
+        {mood == null ? <div>{statusMessage}</div> : <div>{matches}</div>}
       </div>
     </div>
   );
@@ -105,7 +139,7 @@ const Lyric: React.FC<{ song: string; lyric: string }> = ({ song, lyric }) => {
             {song}
           </span>
         )}
-        "{lyric}"
+        {lyric}
       </span>
     </>
   );
