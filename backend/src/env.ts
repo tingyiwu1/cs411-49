@@ -2,10 +2,10 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const SPOTIFY_CLIENT_ID = "abf851abce2b43ebb3bdc03476c38573";
-const SPOTIFY_CLIENT_SECRET = "3295b50466ad410b93614a14b4b3edc6";
-const OPENAI_API_KEY = "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";
-const GENIUS_ACCESS_TOKEN = "Qn3V5vL2x_a5VPe2uqnkL_9shHKSsn-jOJ_lNJ4kxvgJrPsfb2qRF41UeUswR76z";
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID ?? "";
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET ?? "";
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY ?? "";
+const GENIUS_ACCESS_TOKEN = process.env.GENIUS_ACCESS_TOKEN ?? "";
 
 const jwt_secret = "supersecret";
 
