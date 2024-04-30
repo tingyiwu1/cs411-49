@@ -10,24 +10,7 @@ const AssessmentPage: React.FC = () => {
   const navigate = useNavigate(); // Access navigate function instead of useHistory
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("/playlists");
-        if (response.data && Array.isArray(response.data)) {
-          // setPlaylists(response.data);
-        } else {
-          console.error("Invalid playlists data:", response.data);
-        }
-      } catch (error) {
-        console.error("Error fetching playlists:", error);
-      }
-    };
-
-    if (loggedIn) {
-      fetchData();
-    }
-  }, [loggedIn]);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -41,12 +24,15 @@ const AssessmentPage: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+    if (selectedOptions.length === 0) {
+      return;
+    }
     console.log(selectedOptions);
+    setSubmitting(true);
     try {
       const response = await axios.post<Assessment>("/evaluate", {
         options: selectedOptions,
       });
-      console.log(response.data);
       const assessment = response.data;
       navigate(`/assessments/${assessment.id}`);
     } catch (error) {
@@ -59,54 +45,58 @@ const AssessmentPage: React.FC = () => {
       {/* Main Content */}
       <div className="content-container">
         <div className="home-container">
-          <div className="main-content">
-            <h2>Let's get analyzing!</h2>
-            <p>What would you like to get analyzed?</p>
-            <div className="checkbox-group">
-              <label>
-                <input
-                  type="checkbox"
-                  value="topArtists"
-                  onChange={handleCheckboxChange}
-                />{" "}
-                Top Artists
-              </label>
-              {/* Render other checkboxes */}
-              <label>
-                <input
-                  type="checkbox"
-                  value="topTracks"
-                  onChange={handleCheckboxChange}
-                />{" "}
-                Top Tracks
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="playlists"
-                  onChange={handleCheckboxChange}
-                />{" "}
-                Playlists
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="savedAlbums"
-                  onChange={handleCheckboxChange}
-                />{" "}
-                Saved Albums
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  value="recentlyPlayed"
-                  onChange={handleCheckboxChange}
-                />{" "}
-                Recently Played
-              </label>
+          {submitting ? (
+            <div>Submitting...</div>
+          ) : (
+            <div className="main-content">
+              <h2>Let's get analyzing!</h2>
+              <p>What would you like to get analyzed?</p>
+              <div className="checkbox-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    value="topArtists"
+                    onChange={handleCheckboxChange}
+                  />{" "}
+                  Top Artists
+                </label>
+                {/* Render other checkboxes */}
+                <label>
+                  <input
+                    type="checkbox"
+                    value="topTracks"
+                    onChange={handleCheckboxChange}
+                  />{" "}
+                  Top Tracks
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    value="playlists"
+                    onChange={handleCheckboxChange}
+                  />{" "}
+                  Playlists
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    value="savedAlbums"
+                    onChange={handleCheckboxChange}
+                  />{" "}
+                  Saved Albums
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    value="recentlyPlayed"
+                    onChange={handleCheckboxChange}
+                  />{" "}
+                  Recently Played
+                </label>
+              </div>
+              <button onClick={handleSubmit}>Submit</button>
             </div>
-            <button onClick={handleSubmit}>Submit</button>
-          </div>
+          )}
         </div>
       </div>
     </>

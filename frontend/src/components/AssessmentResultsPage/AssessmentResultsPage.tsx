@@ -17,42 +17,49 @@ export const AssessmentResultsPage: React.FC = () => {
     });
   }, [id]);
   return (
-    <div>
-      <h1>Assessment Results</h1>
+    <div className="flex flex-col items-center">
       {assessment ? (
         <div>
-          <div>
+          <div className="mx-20 mt-5 rounded-xl bg-gradient-to-t from-[#DCEEC5] to-[#C5E5A5] p-3 text-lg text-[#755B5B]">
+            <h1 className="text-center text-2xl font-bold">
+              {assessment.title}
+            </h1>
             <p>{assessment.personality}</p>
           </div>
           {assessment.categories.playlists && (
-            <div>
-              <h2>Playlists</h2>
+            <div className="mx-20 mt-5 rounded-xl bg-gradient-to-t from-[#DCEEC5] to-[#C5E5A5] p-3 text-lg text-[#755B5B]">
+              <div className="text-center text-xl font-bold">Playlists</div>
               {assessment.categories.playlists}
             </div>
           )}
           {assessment.categories.topArtists && (
-            <div>
-              <h2>Artists</h2>
+            <div className="mx-20 mt-5 rounded-xl bg-gradient-to-t from-[#DCEEC5] to-[#C5E5A5] p-3 text-lg text-[#755B5B]">
+              <div className="text-center text-xl font-bold">Artists</div>
               {assessment.categories.topArtists}
             </div>
           )}
           {assessment.categories.topTracks && (
-            <div>
-              <h2>Tracks</h2>
+            <div className="mx-20 mt-5 rounded-xl bg-gradient-to-t from-[#DCEEC5] to-[#C5E5A5] p-3 text-lg text-[#755B5B]">
+              <div className="text-center text-xl font-bold">Tracks</div>
               {assessment.categories.topTracks}
             </div>
           )}
           {assessment.categories.savedAlbums && (
-            <div>
-              <h2>Albums</h2>
+            <div className="mx-20 mt-5 rounded-xl bg-gradient-to-t from-[#DCEEC5] to-[#C5E5A5] p-3 text-lg text-[#755B5B]">
+              <div className="text-center text-xl font-bold">Albums</div>
               {assessment.categories.savedAlbums}
             </div>
           )}
           <div>
-            <h2>MBTI Traits</h2>
+            <div className="mx-20 mt-5 rounded-xl bg-[#FFBEB9] p-3 text-lg text-[#755B5B]">
+              <h2 className="text-center text-2xl font-bold">MBTI Traits</h2>
+            </div>
             {assessment.mbtiTraits.map((trait) => (
-              <div key={trait.trait}>
-                <h3>{trait.trait}</h3>
+              <div
+                key={trait.trait}
+                className="mx-20 mt-3 rounded-xl bg-[#FFBEB9] p-3 text-lg text-[#755B5B]"
+              >
+                <h3 className="text-center text-xl font-bold">{trait.trait}</h3>
                 <p>{trait.explanation}</p>
               </div>
             ))}

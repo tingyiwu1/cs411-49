@@ -141,17 +141,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     return playlists;
   });
 
-  // Define a new endpoint to retrieve the message
-  server.get("/message", async (request, reply) => {
-    try {
-      // Send the generated message in the response
-      reply.send({ message: generatedMessage });
-    } catch (error) {
-      console.error("Error retrieving message:", error);
-      reply.code(500).send({ error: "Internal Server Error" });
-    }
-  });
-
   server.post<{
     Body: { options: string[] };
   }>("/evaluate", { preHandler }, async (request, reply) => {
@@ -221,22 +210,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
 
     const categoriesResponse = await getCompletion(openai, messages);
 
-    // const stream = await openai.chat.completions.create({
-    //   model: "gpt-3.5-turbo",
-    //   messages,
-    //   stream: true,
-    // });
-    // const response: ChatCompletionMessage = {
-    //   role: "assistant",
-    //   content: "",
-    // };
-    // for await (const message of stream) {
-    //   const delta = message.choices[0]?.delta.content ?? "";
-    //   response.content += delta;
-    //   process.stdout.write(delta);
-    // }
-    // process.stdout.write("\n");
-
     const categories = JSON.parse(
       categoriesResponse.content ?? "{}"
     ) as AssessmentCategories;
@@ -260,28 +233,9 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
 
     const personalityResponse = await getCompletion(openai, messages);
 
-    // const stream2 = await openai.chat.completions.create({
-    //   model: "gpt-3.5-turbo",
-    //   messages,
-    //   stream: true,
-    // });
-
-    // const response2: ChatCompletionMessage = {
-    //   role: "assistant",
-    //   content: "",
-    // };
-
-    // for await (const message of stream2) {
-    //   const delta = message.choices[0]?.delta.content ?? "";
-    //   response2.content += delta;
-    //   process.stdout.write(delta);
-    // }
-
     const personality = JSON.parse(
       personalityResponse.content ?? "{}"
     ) as AssessmentPersonality;
-
-    // messages.push(response2);
 
     messages.push({
       role: "system",
@@ -316,35 +270,10 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
 
     const mbtiTraitsResponse = await getCompletion(openai, messages);
 
-    // const stream3 = await openai.chat.completions.create({
-    //   model: "gpt-3.5-turbo",
-    //   messages,
-    //   stream: true,
-    // });
-
-    // const response3: ChatCompletionMessage = {
-    //   role: "assistant",
-    //   content: "",
-    // };
-
-    // for await (const message of stream3) {
-    //   const delta = message.choices[0]?.delta.content ?? "";
-    //   response3.content += delta;
-    //   process.stdout.write(delta);
-    // }
-
-    // process.stdout.write("\n");
-
     const mbtiTraits = JSON.parse(
       mbtiTraitsResponse.content ?? "[]"
     ) as AssessmentMBTI[];
 
-    // await prisma.historyEntry.create({
-    //   data: {
-    //     userId: request.prismaUser.id,
-    //     content: response,
-    //   },
-    // });
     const assessmentContent: AssessmentContent = {
       categories,
       personality: personality.personality,
