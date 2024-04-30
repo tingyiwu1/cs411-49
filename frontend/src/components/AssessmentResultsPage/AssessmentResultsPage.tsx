@@ -16,8 +16,15 @@ export const AssessmentResultsPage: React.FC = () => {
       setAssessment(response.data);
     });
   }, [id]);
+
+  // Define inline CSS styles for padding
+  const containerStyle: React.CSSProperties = {
+    padding: '20px', // Adjust the padding size as needed
+    borderRadius: '8px', // Optional: Add border radius
+  };
+
   return (
-    <div>
+    <div style={containerStyle}>
       <h1>Assessment Results</h1>
       {assessment ? (
         <div>
@@ -27,32 +34,38 @@ export const AssessmentResultsPage: React.FC = () => {
           {assessment.categories.playlists && (
             <div>
               <h2>Playlists</h2>
-              {assessment.categories.playlists}
+              <p>{assessment.categories.playlists}</p>
             </div>
           )}
           {assessment.categories.topArtists && (
             <div>
               <h2>Artists</h2>
-              {assessment.categories.topArtists}
+              <p>{assessment.categories.topArtists}</p>
             </div>
           )}
           {assessment.categories.topTracks && (
             <div>
               <h2>Tracks</h2>
-              {assessment.categories.topTracks}
+              <p>{assessment.categories.topTracks}</p>
             </div>
           )}
           {assessment.categories.savedAlbums && (
             <div>
               <h2>Albums</h2>
-              {assessment.categories.savedAlbums}
+              <p>{assessment.categories.savedAlbums}</p>
+            </div>
+          )}
+          {assessment.categories.recentlyPlayed && (
+            <div>
+              <h2>Recently Played</h2>
+              <p>{assessment.categories.recentlyPlayed}</p>
             </div>
           )}
           <div>
             <h2>MBTI Traits</h2>
             {assessment.mbtiTraits.map((trait) => (
               <div key={trait.trait}>
-                <h3>{trait.trait}</h3>
+                <p>{trait.trait}</p>
                 <p>{trait.explanation}</p>
               </div>
             ))}

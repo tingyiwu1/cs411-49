@@ -26,16 +26,6 @@ BrowserRouter {
     font-weight: bold;
     padding: 10px;
   }
-
-  .header {
-    background-color: #FBF4E9;
-    height: 90px;
-    border-radius: 65px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 20px;
-  }
   .title {
     font-size: 24px;
     font-weight: bold;
@@ -54,7 +44,7 @@ BrowserRouter {
   }
 
   /* Dropdown menu styles */
-.dropdown {
+  .dropdown {
     position: relative;
   }
   
@@ -79,9 +69,20 @@ BrowserRouter {
     padding: 0.75rem 1rem;
     color: #374151;
     text-decoration: none;
+    font-size: 1.3rem;
+    font-family: 'Comic Sans MS', cursive;
   }
   
   .dropdown-menu a:hover {
     background-color: #f3f4f6;
   }
   
+  .analyze-link a {
+    font-size: 1.0rem;
+    font-family: 'Comic Sans MS', cursive;
+  }
+
+  .user-section div {
+    font-size: 1.0rem;
+    font-family: 'Comic Sans MS', cursive;
+  }

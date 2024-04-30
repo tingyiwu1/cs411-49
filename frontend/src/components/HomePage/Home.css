@@ -1,81 +1,66 @@
-.home-container {
+/* WelcomePage.css */
+
+body {
+  margin: 0;
+  padding: 0;
   background-color: #FFFAF3;
+}
+
+.container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
   justify-content: center;
-  min-height: 100vh; /* Ensure the container takes up at least the full height of the viewport */
-}
-
-.header {
-  background-color: #FBF4E9;
-  height: 90px;
-  border-radius: 65px;
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
-  width: 95%; /* Ensure the header spans the full width of the page */
-  /*margin-bottom: 20px; /* Add margin to separate header from main content */
+  height: 70vh;
 }
 
-.logo, .title, .profile-name {
-  cursor: pointer;
+.box {
+  background-color: #FBF4E9;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
-.left-section {
-  margin-right: auto; /* Pushes the middle and right sections to the right */
-}
-
-.right-section {
-  margin-left: auto; /* Pushes the login button to the right */
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .logo {
-  width: 30px; /* Adjust size as needed */
-  height: auto; /* Maintain aspect ratio */
-  margin-right: 10px; /* Add spacing between logo and title */
+  width: 200px;
 }
 
-.title {
-  font-size: 24px; /* Adjust font size as needed */
-  font-weight: bold; /* Make text bold */
+h1 {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  font-family: 'Comic Sans MS', cursive;
 }
 
-.right-section a {
-  text-decoration: none; /* Remove underline from the link */
-  color: black; /* Adjust color as needed */
-  padding: 10px 20px; /* Add padding to the login button */
-  border-radius: 5px; /* Add rounded corners to the button */
+h2 {
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+  font-family: 'Comic Sans MS', cursive;
 }
 
-.large-rectangle {
+p {
+  font-size: 1.0rem;
+  margin-bottom: 20px;
+  font-family: 'Comic Sans MS', cursive;
+}
+
+.login-button {
   background-color: #FBF4E9;
-  width: 80%; /* Adjusted to take up 80% of the page width */
-  max-width: 1115px; /* Maximum width for larger screens */
-  height: 570px;
-  border-radius: 65px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
+  color: #000000;
+  border: none;
+  padding: 20px 40px;
+  font-size: 1.8rem; /* Adjusted button text size */
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-family: 'Comic Sans MS', cursive;
 }
-
-.main-content {
-  text-align: center; /* Center the text */
-}
-
-.checkbox-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* Center the checkboxes vertically */
-}
-
-.checkbox-group label {
-  margin-bottom: 10px;
-}
-
-button {
-  display: block;
-  margin: 20px auto; /* Center the button horizontally */
+.login-button:hover {
+  background-color: #f9ecd8;
 }

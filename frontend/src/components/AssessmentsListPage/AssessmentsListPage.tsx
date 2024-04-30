@@ -12,20 +12,38 @@ export const AssessmentsListPage: React.FC = () => {
     });
   }, []);
 
+  // Define inline CSS styles for container and assessment box
+  const containerStyle: React.CSSProperties = {
+    padding: '20px', // Adjust the padding size as needed
+    borderRadius: '8px', // Optional: Add border radius
+  };
+
+  // Style for each assessment box
+  const assessmentBoxStyle: React.CSSProperties = {
+    marginBottom: '20px', // Adjust margin bottom as needed
+    backgroundColor: '#f0f0f0', // Set background color
+    cursor: 'pointer', // Set cursor to pointer to indicate clickability
+    borderBottom: '1px solid #ccc', // Add bottom border
+    paddingBottom: '10px', // Add padding to separate assessments
+  };
+
   return (
-    <div>
+    <div style={containerStyle}>
       <h1>Assessments</h1>
-      {assessments.map((assessment) => (
-        <div key={assessment.id}>
-          <h2>{assessment.id}</h2>
-          <Link to={`/assessments/${assessment.id}`}>View</Link>
-          <p>
-            {assessment.mbtiTraits.map((t, i) => (
-              <span key={`${assessment.id}-${i}`}>{t.trait} </span>
-            ))}
-          </p>
-          <p>{assessment.personality}</p>
-        </div>
+      {assessments.map((assessment, index) => (
+        <Link key={assessment.id} to={`/assessments/${assessment.id}`} style={assessmentBoxStyle}>
+          <div>
+            {/* <h2>{assessment.id}</h2> */}
+            <p>
+              {assessment.mbtiTraits.map((t, i) => (
+                <span key={`${assessment.id}-${i}`}>{t.trait} </span>
+              ))}
+            </p>
+            <p>{assessment.personality}</p>
+          </div>
+          {/* Render divider if not the last assessment */}
+          {index !== assessments.length - 1 && <hr />}
+        </Link>
       ))}
     </div>
   );
