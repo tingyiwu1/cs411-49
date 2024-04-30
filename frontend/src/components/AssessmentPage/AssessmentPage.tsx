@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import "./AssessmentPage.css";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate instead of useHistory
-import { useLogin } from "../../hooks";
-import LogoImage from "../sound-waves.png";
+import { useNavigate } from "react-router-dom"; // Import useNavigate instead of useHistory
 import { Assessment } from "../../types";
+import { LoginContext } from "../../utils";
 
 const AssessmentPage: React.FC = () => {
-  const { loggedIn, user } = useLogin();
+  const { loggedIn } = useContext(LoginContext);
   const navigate = useNavigate(); // Access navigate function instead of useHistory
-  const [playlists, setPlaylists] = useState<any[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   useEffect(() => {
@@ -90,17 +88,6 @@ const AssessmentPage: React.FC = () => {
                 />{" "}
                 Playlists
               </label>
-              {/* Render checkboxes for user's playlists */}
-              {playlists.map((playlist) => (
-                <label key={playlist.name}>
-                  <input
-                    type="checkbox"
-                    value={playlist.name}
-                    onChange={handleCheckboxChange}
-                  />{" "}
-                  {playlist.name}
-                </label>
-              ))}
               <label>
                 <input
                   type="checkbox"

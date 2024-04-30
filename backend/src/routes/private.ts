@@ -118,7 +118,10 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
   ]);
 
   server.get("/me", { preHandler }, async (request, reply) => {
-    return request.spotifyUser;
+    return {
+      ...request.spotifyUser,
+      created_at: request.prismaUser.createdAt.toISOString(),
+    };
   });
 
   server.get("/playlists", { preHandler }, async (request, reply) => {
@@ -397,7 +400,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       },
     ];
 
-    const mood = await getCompletion(openai, messages);
+    const mood = await getCompletion(openai, messages, "gpt-3.5-turbo");
 
     messages.push({
       role: "system",
@@ -409,13 +412,15 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       `,
     });
 
-    const mentionedSongsResponse = await getCompletion(openai, messages);
+    const mentionedSongsResponse = await getCompletion(
+      openai,
+      messages,
+      "gpt-4-turbo"
+    );
 
     const mentionedSongs = JSON.parse(
       mentionedSongsResponse.content ?? "[]"
     ) as string[];
-
-    console.log("mentionedSongs", mentionedSongs);
 
     messages[1].content = `Recently listened tracks: ${JSON.stringify(
       tracksWithLyrics.filter((t) => mentionedSongs.includes(t.name))
@@ -435,7 +440,7 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       `,
     });
 
-    const quotes = await getCompletion(openai, messages);
+    const quotes = await getCompletion(openai, messages, "gpt-3.5-turbo");
 
     messages.push({
       role: "system",
@@ -443,11 +448,14 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
       Based on your understanding of the user's mood, generate a summary that describes the vibe \
       of the user's mood. Use concise and descriptive language, and avoid using complete sentences. Weave the quotes \
       into the summary in a way that makes sense. Do not use the quotes as citations to justify your description, but rather \
-      as self-standing parts of the description itself. Do not explain what each quote entails.
+      as self-standing parts of the description itself. Do not explain what each quote entails.\
+
+      Output the summary wrapped in a <div> tag. Wrap all quotes in <span> tags with the song title in the data-song attribute.
+      e.g. <span data-song="song title">quote</span>
       `,
     });
 
-    const summary = await getCompletion(openai, messages);
+    const summary = await getCompletion(openai, messages, "gpt-4-turbo");
 
     return summary;
   });

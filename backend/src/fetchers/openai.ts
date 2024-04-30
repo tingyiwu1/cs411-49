@@ -3,13 +3,15 @@ import {
   ChatCompletionMessage,
   ChatCompletionMessageParam,
 } from "openai/resources";
+import { ChatCompletionCreateParamsBase } from "openai/resources/chat/completions";
 
 export async function getCompletion(
   openai: OpenAI,
-  messages: ChatCompletionMessageParam[]
+  messages: ChatCompletionMessageParam[],
+  model: ChatCompletionCreateParamsBase["model"] = "gpt-3.5-turbo"
 ) {
   const stream = await openai.chat.completions.create({
-    model: "gpt-4-turbo",
+    model,
     messages,
     stream: true,
   });
