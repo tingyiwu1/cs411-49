@@ -155,15 +155,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
         options.includes("playlists")
           ? processPlaylists(request.spotifyApi)
           : null,
-          // options.includes("playlists")
-          // ? processPlaylists(request.spotifyApi).then(fetchedPlaylists => {
-          //     if (fetchedPlaylists) {
-          //       return fetchedPlaylists.filter(playlist => options.includes(playlist.name));
-          //     } else {
-          //       return [];
-          //     }
-          //   })
-          // : [],
         options.includes("topArtists")
           ? processTopArtists(request.spotifyApi)
           : null,
@@ -176,7 +167,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
         options.includes("recentlyPlayed")
           ? processRecentlyPlayed(request.spotifyApi)
           : null,
-        // Add similar checks for other data
       ]);
     const info = {
       playlists,
@@ -316,7 +306,6 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     Body: {
       start: string;
     };
-    // Reply: ReadableStream<StreamEvent<string>>;
   }>("/mood", { preHandler }, async (request, reply) => {
     // return `Reflective and complex emotions swirl with a mix of contemplation and empathy. <span data-song="Earth, Wind & Fire">왜 넌 갈팡질팡 날 헛갈려 해</span> captures the confusion and desire for clarity, while <span data-song="A Mirage">Coming to find I need to pick up my slack, Realize I can't go back</span> depicts a self-awareness and determination to improve and move ahead. Compassion threads through, with <span data-song="Make Up (Feat. Crush)">Baby, babe, hate to see you cry</span> emphasizing concern and longing for resolution.`;
 

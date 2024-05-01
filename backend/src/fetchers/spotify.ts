@@ -7,7 +7,7 @@ import {
 import * as data from "../../../sample_data.json";
 import { DateTime } from "luxon";
 
-const USE_LOCAL_DATA = true;
+const USE_LOCAL_DATA = false;
 
 export async function playedInTimeframe(
   spotifyApi: SpotifyApi,
