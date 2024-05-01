@@ -1,5 +1,9 @@
 # 411 group 49
 wow amazing
+# Demo Vid
+
+https://github.com/tingyiwu1/cs411-49/assets/68577990/675db454-dfad-43a0-9bbb-058d59463690
+
 ## Setting up local environment
 ### clone repo
 ```bash
