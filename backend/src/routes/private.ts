@@ -145,16 +145,25 @@ export const privateRoutes: FastifyPluginAsync = async (server, opts) => {
     Body: { options: string[] };
   }>("/evaluate", { preHandler }, async (request, reply) => {
     const { options } = request.body;
-
+  
     if (options.length === 0) {
       throw new Error("No options selected");
     }
-    // Fetch relevant data based on user's selection
+  
     const [playlists, topArtists, topTracks, savedAlbums, recentlyPlayed] =
       await Promise.all([
         options.includes("playlists")
           ? processPlaylists(request.spotifyApi)
           : null,
+          // options.includes("playlists")
+          // ? processPlaylists(request.spotifyApi).then(fetchedPlaylists => {
+          //     if (fetchedPlaylists) {
+          //       return fetchedPlaylists.filter(playlist => options.includes(playlist.name));
+          //     } else {
+          //       return [];
+          //     }
+          //   })
+          // : [],
         options.includes("topArtists")
           ? processTopArtists(request.spotifyApi)
           : null,

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import "./Login.css"; // Import CSS file for styling
 import { useNavigate, useSearchParams } from "react-router-dom";
 

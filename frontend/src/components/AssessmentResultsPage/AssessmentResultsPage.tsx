@@ -16,6 +16,7 @@ export const AssessmentResultsPage: React.FC = () => {
       setAssessment(response.data);
     });
   }, [id]);
+
   return (
     <div className="flex flex-col items-center">
       {assessment ? (
