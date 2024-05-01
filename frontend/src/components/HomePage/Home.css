@@ -32,24 +32,6 @@ body {
   width: 200px;
 }
 
-/* h1 {
-  font-size: 4rem;
-  margin-bottom: 20px;
-  font-family: 'Comic Sans MS', cursive;
-}
-
-h2 {
-  font-size: 2.5rem;
-  margin-bottom: 20px;
-  font-family: 'Comic Sans MS', cursive;
-}
-
-p {
-  font-size: 1.0rem;
-  margin-bottom: 20px;
-  font-family: 'Comic Sans MS', cursive;
-} */
-
 .login-button {
   background-color: #FBF4E9;
   color: #000000;
@@ -59,7 +41,6 @@ p {
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  font-family: 'Comic Sans MS', cursive;
 }
 .login-button:hover {
   background-color: #f9ecd8;

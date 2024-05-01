@@ -78,7 +78,6 @@
 button {
   display: block;
   margin: 20px auto; /* Center the button horizontally */
-  font-family: 'Comic Sans MS', cursive; /* Apply Comic Sans MS font family to button text */
   font-size: 1.5rem; /* Adjust button text size as needed */
 }
 

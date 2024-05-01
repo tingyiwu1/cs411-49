@@ -43,8 +43,8 @@ const AssessmentPage: React.FC = () => {
     <>
       {/* Main Content */}
       <div className="main-content">
-        <h2>Let's get analyzing!</h2>
-        <p>What would you like to get analyzed?</p>
+        <h2>New Personality Assessment</h2>
+        <p>Select options to include:</p>
         <div className="checkbox-group">
           {/* Render checkboxes */}
           <label>
